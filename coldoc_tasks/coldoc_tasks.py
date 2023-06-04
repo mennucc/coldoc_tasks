@@ -531,7 +531,7 @@ def __tasks_server_start_nolock(address, authkey, infofile, with_django=None, te
 def tasks_server_start(address, authkey, infofile, with_django=None, tempdir=default_tempdir):
     " start a server with `address` and `authkey` ,  saving info in `infofile (that is locked while in use)"
     if lockfile:
-        lock = lockfile.FileLock(infofile)
+        lock = lockfile.FileLock(infofile, timeout=2)
         with lock:
             return __tasks_server_start_nolock(address, authkey, infofile, with_django, tempdir)
     else:
