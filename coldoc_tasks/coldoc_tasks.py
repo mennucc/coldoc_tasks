@@ -563,6 +563,12 @@ def main(argv):
         if os.environ.get('DJANGO_SETTINGS_MODULE') is None:
             logger.error('environmental variable DJANGO_SETTINGS_MODULE must be set')
             return False
+        DJANGO_SETTINGS_MODULE = os.environ.get('DJANGO_SETTINGS_MODULE')
+        a = DJANGO_SETTINGS_MODULE.replace('.','/') + '.py'
+        if not os.path.isfile(a):
+            logger.error('environmental variable DJANGO_SETTINGS_MODULE references a non exixtent file %r',a)
+            return False
+        sys.path.insert(0,'.')
         #
         import django
         django.setup()
