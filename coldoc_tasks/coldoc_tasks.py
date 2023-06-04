@@ -49,7 +49,7 @@ __doc__ = """
       
 For each command, there is `django_server..` version:
 this versione initializes a django instance, and looks
-into the settings for `COLDOC_TASKS_INFO` to know
+into the settings for `COLDOC_TASKS_INFOFILE` to know
 where the infofile is; when starting the server,
 moreover, it gets the authkey from settings.COLDOC_TASKS_PASSWORD
 and the socket filename from  settings.COLDOC_TASKS_SOCKET
@@ -567,12 +567,11 @@ def main(argv):
         import django
         django.setup()
         from django.conf import settings
-        info = settings.COLDOC_TASKS_INFO
+        info = settings.COLDOC_TASKS_INFOFILE
         #
         if argv[0] == 'django_server_start':
             auth = settings.COLDOC_TASKS_PASSWORD
             sock = settings.COLDOC_TASKS_SOCKET
-            info = settings.COLDOC_TASKS_INFOFILE
             tempdir = getattr( settings, 'COLDOC_TMP_ROOT', default_tempdir)
             return tasks_server_start(address=sock, authkey=auth, infofile=info,
                                       with_django=os.environ.get('DJANGO_SETTINGS_MODULE'),

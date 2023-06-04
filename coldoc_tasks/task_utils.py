@@ -17,8 +17,9 @@ logger = logging.getLogger(__name__)
 
 def start_tasks_server(settings, use_multiprocessing=False):
     " this is not really used "
-    info = settings.COLDOC_TASKS_INFO
-    ok, sock, auth, pid = check_task_server(info)
+    import coldoc_tasks.coldoc_tasks
+    info = settings.COLDOC_TASKS_INFOFILE
+    ok, sock, auth, pid = coldoc_tasks.coldoc_tasks.task_server_check(info)
     if not ok:
         if pid:
             logger.warning('Tasks server pid %r is not responding', pid)
