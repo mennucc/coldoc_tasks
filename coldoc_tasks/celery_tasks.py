@@ -120,7 +120,7 @@ def __celery_run_it(cmd, k, v):
     " internal function, to be wrapped for server and clients"
     return cmd(*k, **v)
 
-def __get_run_it(celery_app):
+def _get_run_it(celery_app):
     " get factotum function, wrapped for server and clients"
     return celery_app.task(name='celery_run_it')(__celery_run_it)
 
@@ -150,7 +150,7 @@ class fork_class(fork_class_base):
         if self.__celery_app is None:
             self.__celery_app  = get_client(self.__celeryconfig)
         assert self.__celery_app
-        self.__celery_run_it = __get_run_it(self.__celery_app)
+        self.__celery_run_it = _get_run_it(self.__celery_app)
         #
         self.__cmd_name = cmd.__name__
         if self.use_fork_:
@@ -187,7 +187,7 @@ def run_server(celeryconfig=None, with_django=None):
     if app is None:
         return None
     # HACK register factotum function
-    c = __get_run_it(app)
+    c = _get_run_it(app)
     globals()['celery_run_it'] = c
     #
     worker = app.Worker()
