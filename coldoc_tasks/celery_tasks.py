@@ -211,6 +211,10 @@ def __countthem():
 
 def main(argv):
     #
+    if not argv:
+        print(__doc__)
+        return False
+    #
     if 'status' == argv[0] :
         celery_app = get_client(argv[1])
         for k,v in status(celery_app).items():
