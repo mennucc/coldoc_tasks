@@ -21,7 +21,16 @@ import os, sys, io, importlib.util, functools, inspect
 import logging
 logger = logging.getLogger(__name__)
 
-from simple_tasks import fork_class_base
+if __name__ == '__main__':
+    a = os.path.realpath(os.path.dirname(__file__))
+    if a in sys.path:
+        del sys.path[sys.path.index(a)]
+    a = os.path.dirname(a)
+    if a not in sys.path:
+        sys.path.insert(0,a)
+
+
+from coldoc_tasks.simple_tasks import fork_class_base
 
 ####################### celery machinery
 try:
@@ -213,7 +222,7 @@ def main(argv):
         return celery_server_check(argv[1])
     #
     elif 'test' == argv[0]:
-        from task_utils import test_fork
+        from coldoc_tasks.task_utils import test_fork
         FC = functools.partial(fork_class, celeryconfig=argv[1])
         ret = test_fork(fork_class=FC)
         if os.environ.get('DJANGO_SETTINGS_MODULE') == 'ColDocDjango.settings':

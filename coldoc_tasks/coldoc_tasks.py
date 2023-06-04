@@ -65,8 +65,17 @@ default_tempdir = tempfile.gettempdir()
 import logging
 logger = logging.getLogger(__name__)
 
-from simple_tasks import fork_class_base
-import task_utils
+if __name__ == '__main__':
+    a = os.path.realpath(os.path.dirname(__file__))
+    if a in sys.path:
+        del sys.path[sys.path.index(a)]
+    a = os.path.dirname(a)
+    if a not in sys.path:
+        sys.path.insert(0,a)
+    
+
+from coldoc_tasks.simple_tasks import fork_class_base
+
 
 
 __all__ = ('get_client', 'run_server', 'ping', 'status', 'shutdown', 'fork_class',
@@ -605,6 +614,7 @@ def main(argv):
         print(str(manager.status__()))
         return True
     elif 'test' == argv[0] :
+        import coldoc_tasks.task_utils as task_utils
         logger.setLevel(logging.INFO)
         FC = functools.partial(fork_class, address=address, authkey=authkey)
         task_utils.logger.setLevel(logging.INFO)
