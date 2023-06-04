@@ -579,7 +579,8 @@ def main(argv):
                                       tempdir=tempdir)
         argv[0]  = argv[0][len('django_server_'):]
     elif len(argv)<= 1:
-        return __doc__
+        print( __doc__)
+        return False
     if  'start' == argv[0] and len(argv) in (3,4):
         infofile, address= argv[1:3]
         if len(argv) == 3:
