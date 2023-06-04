@@ -559,8 +559,8 @@ def __countthem():
 
 
 def main(argv):
-    if len(argv) > 1  and   argv[0].startswith('django_server_'):
-        if os.environ('DJANGO_SETTINGS_MODULE') is None:
+    if argv[0].startswith('django_server_'):
+        if os.environ.get('DJANGO_SETTINGS_MODULE') is None:
             logger.error('environmental variable DJANGO_SETTINGS_MODULE must be set')
             return False
         #
