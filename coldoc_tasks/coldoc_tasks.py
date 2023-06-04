@@ -577,9 +577,11 @@ def main(argv):
                                       with_django=os.environ.get('DJANGO_SETTINGS_MODULE'),
                                       tempdir=tempdir)
         argv[0]  = argv[0][len('django_server_'):]
-    elif len(argv)<= 1:
-        print( __doc__)
-        return False
+    else:
+        if len(argv)<= 1:
+            print( __doc__)
+            return False
+        info = argv[1]
     if  'start' == argv[0] and len(argv) in (3,4):
         infofile, address= argv[1:3]
         if len(argv) == 3:
@@ -589,7 +591,6 @@ def main(argv):
             authkey = authkey.encode()
         return tasks_server_start(address, authkey, infofile)
     #
-    info = argv[1]
     try:
         address, authkey, pid = tasks_server_readinfo(info)
         assert address and authkey, 'One of address, authkey is missing'
