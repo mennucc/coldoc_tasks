@@ -4,7 +4,7 @@
 broker_url = 'redis://localhost:6379/0'
 
 ## Using the database to store task state and results.
-esult_backend = 'redis://localhost:6379/0'
+result_backend = 'redis://localhost:6379/0'
 
 # good idea, from
 # https://stackoverflow.com/a/69546952/5058564
