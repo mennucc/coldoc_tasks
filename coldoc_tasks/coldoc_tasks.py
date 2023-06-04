@@ -235,23 +235,23 @@ class fork_class(fork_class_base):
 ############################## status
 
 def ping(address, authkey):
-    manager = get_manager(address, authkey)
     try:
+        manager = get_manager(address, authkey)
         return manager.ping__()
     except Exception as E:
         logger.warning('When pinging %r',E)
 
 
 def status(address, authkey):
-    manager = get_manager(address, authkey)
     try:
+        manager = get_manager(address, authkey)
         return manager.status__()
     except Exception as E:
         logger.warning('When status %r',E)
 
 def shutdown(address, authkey):
-    manager = get_manager(address, authkey)
     try:
+        manager = get_manager(address, authkey)
         return manager.shutdown__()
     except Exception as E:
         logger.warning('When shutdown %r',E)
