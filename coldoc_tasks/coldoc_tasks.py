@@ -70,6 +70,7 @@ import task_utils
 
 
 __all__ = ('get_client', 'run_server', 'ping', 'status', 'shutdown', 'fork_class',
+           'run_cmd', 'wait', 'get_result', 'join',
            'tasks_server_readinfo', 'tasks_server_writeinfo', 'tasks_server_start', 'task_server_check')
 
 ##########################
@@ -145,25 +146,31 @@ def __send_message(m,F):
 ######################### starting jobs
 
 def run_cmd(manager, cmd, args, kwarks):
+    " run a command "
     proxy = self.__manager.run_cmd__(cmd, args, kwarks)
     return proxy._getvalue()
 
 def wait(id_, manager):
+    " wait for command execution to end "
     F = manager.get_wait_socket__(id_)
     F = F._getvalue()
     if F is not None:
         return __send_message(b'#WAIT', F)
 
 def get_result(id_, manager):
+    """ get command result , as a pair (status, result),
+      where status is 0 or 1, 
+      if status is 0, result is the result
+      if status is 1, result contain the exception given by the command
+    """
     F = manager.get_wait_socket__(id_)
     F = F._getvalue()
     if F is not None:
         return __send_message(b'#SEND', F)
     return None
 
-def join(id_, manager=None):
-    if manager is None:
-        manager = get_manager()
+def join(id_, manager):
+    " let the subprocess of the command terminate gracefully "
     F = manager.get_wait_socket__(id_)
     F = F._getvalue()
     if F is not None:
