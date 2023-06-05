@@ -265,12 +265,13 @@ class fork_class(fork_class_base):
 
 ############################## status
 
-def ping(address, authkey):
+def ping(address, authkey, warn=True):
     try:
         manager = get_manager(address, authkey)
         return manager.ping__()
     except Exception as E:
-        logger.warning('When pinging %r',E)
+        if warn:
+            logger.warning('When pinging %r',E)
 
 
 def status(address, authkey):
@@ -633,7 +634,7 @@ def tasks_server_autostart(infofile, sock, auth=None, pythonpath = (),
         # check it
         ok = False
         for j in range(int(float(timeout) * 10.),0,-1):
-            ok = ping(address=sock, authkey=auth)
+            ok = ping(address=sock, authkey=auth, warn=False)
             if ok: break
             time.sleep(0.1)
         #
