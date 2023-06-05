@@ -585,14 +585,14 @@ def tasks_server_autostart(infofile, sock, auth=None, pythonpath = (),
       """
     #
     ok = False
-    opt = os.environ.get('COLDOC_TASKS_AUTOSTART_OPTIONS','')
-    if 'nocheck' not in opt.split(','):
+    opt = os.environ.get('COLDOC_TASKS_AUTOSTART_OPTIONS','').split(',')
+    if 'nocheck' not in opt:
         ok, sock_, auth_, pid_ = task_server_check(infofile)
         if ok:
             return pid_
     #
     proc = None
-    if not ok and 'noautostart' not in opt.split(','):
+    if not ok and 'noautostart' not in opt:
         #
         logger.info('starting task server')
         #
