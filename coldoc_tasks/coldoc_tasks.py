@@ -118,6 +118,13 @@ def __socket_server(socket_, access_pair, rets, id_):
     assert isinstance(access_pair, (tuple,list)), access_pair
     socket_name, auth = access_pair
     assert auth is None or ( isinstance(auth, bytes) and len(auth) == 8)
+    # currently the socket_ is defined before, but, just in case..
+    if socket_ is None:
+        socket_ = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        socket_.bind(socket_name)
+        socket_.listen(2)
+        _mychmod(socket_name)
+    #
     sent = False
     with socket_ as s:
         logger.debug('Id %s listening', id_)
