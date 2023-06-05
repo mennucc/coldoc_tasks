@@ -668,7 +668,16 @@ def tasks_server_autostart(infofile, sock, auth=None, pythonpath = (),
                 os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] =  flag
             proc.start()
         else:
-            logfile = logfile if logfile else os.devnull
+            if logfile is None:
+                logfile_ = tempfile.NamedTemporaryFile(dir=os.path.dirname(infofile),
+                                            delete=False,
+                                            prefix='coldoc_tasks_', suffix='.log')
+            elif isinstance(logfile, str):
+                logfile_ = open(logfile, 'a')
+                logfile_.name = logfile
+            else:
+                logfile_ = open(os.devnull, 'a')
+                logfile_.name = '(was not saved)'
             #
             cmd = os.path.realpath(__file__)
             args = ['python3', cmd]
@@ -682,7 +691,7 @@ def tasks_server_autostart(infofile, sock, auth=None, pythonpath = (),
             if pythonpath:
                 env['PYTHONPATH'] = os.pathsep.join(pythonpath)
             import subprocess
-            proc = subprocess.Popen(args, stdin=open(os.devnull), stdout=open(logfile,'a'),
+            proc = subprocess.Popen(args, stdin=open(os.devnull), stdout=logfile_,
                                     env = env,
                                     stderr=subprocess.STDOUT, text=True,  cwd=cwd)
         # check it
@@ -696,7 +705,7 @@ def tasks_server_autostart(infofile, sock, auth=None, pythonpath = (),
             _mychmod(sock)
         #
         if not ok:
-            logger.critical('Cannot start task process')
+            logger.critical('Cannot start task process, see %r', logfile_.name)
     return proc
 
 def tasks_server_django_autostart(settings, pythonpath=(),
