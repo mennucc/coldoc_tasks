@@ -620,8 +620,8 @@ def tasks_server_autostart(infofile, sock, auth=None, pythonpath = (),
             if subcmd:
                 args += subcmd
             else:
-                tasks_server_writeinfo(info, sock, auth)
-                args += ['start_with', info]
+                tasks_server_writeinfo(infofile, sock, auth)
+                args += ['start_with', infofile]
             env = dict(os.environ)
             env['COLDOC_TASKS_AUTOSTART_OPTIONS'] = 'nocheck,noautostart'
             if pythonpath:
