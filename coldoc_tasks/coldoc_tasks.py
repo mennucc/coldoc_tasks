@@ -626,16 +626,20 @@ def task_server_check(info):
 def tasks_server_autostart(infofile, sock, auth=None, pythonpath = (),
                            cwd=None, use_multiprocessing=False, subcmd=None,
                            logfile = None,
+                           opt = None,
                            timeout = 2.0):
     """ check (using `infofile`) if there is a server running;
          if not, use `sock` `auth` to start it ; if `auth` is `None`, generate a random one;
         any directory in the list `pythonpath` will be added to sys.path;
         the env variable 'COLDOC_TASKS_AUTOSTART_OPTIONS' may be used to tune this functions,
-      setting either of nocheck,noautostart
+      setting either of nocheck,noautostart ; the argument `opt` can override that
       """
     #
     ok = False
-    opt = os.environ.get('COLDOC_TASKS_AUTOSTART_OPTIONS','').split(',')
+    if opt is None:
+        opt = os.environ.get('COLDOC_TASKS_AUTOSTART_OPTIONS','').split(',')
+    elif isinstance(opt,str):
+        opt = opt.split(',')
     if 'nocheck' not in opt:
         ok, sock_, auth_, pid_ = task_server_check(infofile)
         if ok:
@@ -697,11 +701,12 @@ def tasks_server_autostart(infofile, sock, auth=None, pythonpath = (),
 
 def tasks_server_django_autostart(settings, pythonpath=(),
                                   use_multiprocessing=False,
+                                  opt = '',
                                   timeout=2.0):
     """ Check (using information from `settings` module) if there is a server running;
       if not, start it ;  any directory in the list `pythonpath` will be added to sys.path;
       the env variable 'COLDOC_TASKS_AUTOSTART_OPTIONS' may be used to tune this functions,
-      setting either of nocheck,noautostart
+      setting either of nocheck,noautostart ; the argument `opt` can override that
       """
     info = settings.COLDOC_TASKS_INFOFILE
     sock = settings.COLDOC_TASKS_SOCKET
@@ -712,6 +717,7 @@ def tasks_server_django_autostart(settings, pythonpath=(),
                                   use_multiprocessing=use_multiprocessing,
                                   subcmd=['django_server_start'],
                                   logfile=logfile,
+                                  opt = opt,
                                   timeout=timeout)
     settings.COLDOC_TASKS_PROC = proc
     return proc
