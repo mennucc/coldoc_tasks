@@ -8,10 +8,27 @@ logger = logging.getLogger(__name__)
 
 ####
 
-
-####
-
-
+def choose_best_fork_class(infofile, celeryconfig=None):
+    ok = False
+    if celeryconfig:
+        import coldoc_tasks.celery_tasks
+        ok = coldoc_tasks.celery_tasks.ping(celeryconfig)
+        if not ok:
+            logger.critical('Celery backend cannot be contacted')
+        else:
+            fork_class = functools.partial(coldoc_tasks.celery_tasks.fork_class, celeryconfig=celeryconfig)
+            return 'celery', fork_class
+    #
+    import coldoc_tasks.coldoc_tasks
+    ok, tasks_sock, tasks_auth, tasks_pid = coldoc_tasks.coldoc_tasks.task_server_check(infofile)
+    if ok:
+        fork_class = functools.partial(coldoc_tasks.coldoc_tasks.fork_class,address=tasks_sock, authkey=tasks_auth)
+        return 'coldoc', fork_class
+    else:
+        import coldoc_tasks.simple_tasks
+        logger.critical('Tasks server cannot be contacted')
+        fork_class = coldoc_tasks.simple_tasks.fork_class
+        return 'simple', fork_class
 
 
 
