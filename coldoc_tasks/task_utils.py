@@ -13,53 +13,6 @@ logger = logging.getLogger(__name__)
 
 
 
-###
-
-def start_tasks_server(settings, use_multiprocessing=False):
-    " this is not really used "
-    import coldoc_tasks.coldoc_tasks
-    info = settings.COLDOC_TASKS_INFOFILE
-    ok, sock, auth, pid = coldoc_tasks.coldoc_tasks.task_server_check(info)
-    if not ok:
-        if pid:
-            logger.warning('Tasks server pid %r is not responding', pid)
-        else:
-            logger.info('No tasks server')
-    if not ok:
-        sock = settings.COLDOC_TASKS_SOCKET
-        if use_multiprocessing:
-            # this fails in some cases, since django is not reentrant
-            auth = os.urandom(8)
-            proc = multiprocessing.Process(target=coldoc_tasks.tasks_server_start,
-                                           args=(sock, auth, info, 'ColDocDjango.settings'))
-            proc.start()
-            pid = proc.pid
-        else:
-            a = info + '.log'
-            args = ['python3',osjoin(settings.COLDOC_SITE_ROOT,'ColDocDjango','coldoc_tasks'),
-                    'run',info]
-            proc = subprocess.Popen(args, stdin=open(os.devnull), stdout=open(a,'a'),
-                                    stderr=subprocess.STDOUT, text=True, cwd=os.path.dirname(info))
-        # check it
-        ok = False
-        while range(20,0,-1):
-            ok = coldoc_tasks.ping(address=sock, authkey=auth)
-            if ok: break
-            time.sleep(0.1)
-        #
-        try:
-            if ok :
-                os.chmod(0o600,sock)
-        except: 
-            logger.exception('Why cant I set chmod 0600 on %r', sock)
-    #
-    if not ok:
-        logger.critical('Cannot start task process')
-        settings.COLDOC_TASKS_PROC = None
-    else:
-        settings.COLDOC_TASKS_PASSWORD = auth
-        settings.COLDOC_TASKS_PID = pid
-        settings.COLDOC_TASKS_PROC = proc
 
 
 ######################################

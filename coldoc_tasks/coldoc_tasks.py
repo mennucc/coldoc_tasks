@@ -86,6 +86,7 @@ from coldoc_tasks.simple_tasks import fork_class_base
 
 __all__ = ('get_client', 'run_server', 'ping', 'status', 'shutdown', 'fork_class',
            'run_cmd', 'wait', 'get_result', 'join',
+           'tasks_server_autostart', 'tasks_server_django_autostart',
            'tasks_server_readinfo', 'tasks_server_writeinfo', 'tasks_server_start', 'task_server_check')
 
 default_chmod = 0o600
@@ -569,6 +570,100 @@ def task_server_check(info):
             logger.warning('Tasks server pid %r is not responding', pid)
             return False, sock, auth, pid
     return False, None, None, None
+
+
+def tasks_server_autostart(infofile, sock, auth=None, pythonpath = (),
+                           cwd=None, use_multiprocessing=False, subcmd=None,
+                           logfile = None,
+                           timeout = 2.0):
+    """ check (using `infofile`) if there is a server running;
+         if not, use `sock` `auth` to start it ; if `auth` is `None`, generate a random one;
+        any directory in the list `pythonpath` will be added to sys.path;
+        the env variable 'COLDOC_TASKS_AUTOSTART_OPTIONS' may be used to tune this functions,
+      setting either of nocheck,noautostart
+      """
+    #
+    ok = False
+    opt = os.environ.get('COLDOC_TASKS_AUTOSTART_OPTIONS','')
+    if 'nocheck' not in opt.split(','):
+        ok, sock_, auth_, pid_ = task_server_check(infofile)
+        if ok:
+            return pid_
+    #
+    proc = None
+    if not ok and 'noautostart' not in opt.split(','):
+        #
+        logger.info('starting task server')
+        #
+        auth = auth or os.urandom(8)
+        if use_multiprocessing:
+            import multiprocessing
+            # FIXME: this fails in some cases, since django is not reentrant
+            # TODO: support pythontpath, cwd, subcmd for django, tempdir
+            #
+            # FIXME this may not work as I would like
+            flag = os.environ.get('COLDOC_TASKS_AUTOSTART_OPTIONS')
+            os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] =  'nocheck,noautostart'
+            #
+            proc = multiprocessing.Process(target=tasks_server_start,
+                                           args=(sock, auth, infofile))
+            if flag is None:
+                del os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS']
+            else:
+                os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] =  flag
+            proc.start()
+        else:
+            logfile = logfile if logfile else os.devnull
+            #
+            cmd = os.path.realpath(__file__)
+            args = ['python3', cmd]
+            if subcmd:
+                args += subcmd
+            else:
+                tasks_server_writeinfo(info, sock, auth)
+                args += ['start_with', info]
+            env = dict(os.environ)
+            env['COLDOC_TASKS_AUTOSTART_OPTIONS'] = 'nocheck,noautostart'
+            if pythonpath:
+                env['PYTHONPATH'] = os.pathsep.join(pythonpath)
+            import subprocess
+            proc = subprocess.Popen(args, stdin=open(os.devnull), stdout=open(logfile,'a'),
+                                    env = env,
+                                    stderr=subprocess.STDOUT, text=True,  cwd=cwd)
+        # check it
+        ok = False
+        for j in range(int(float(timeout) * 10.),0,-1):
+            ok = ping(address=sock, authkey=auth)
+            if ok: break
+            time.sleep(0.1)
+        #
+        if ok:
+            _mychmod(sock)
+    #
+    if not ok:
+        logger.critical('Cannot start task process')
+    return proc
+
+def tasks_server_django_autostart(settings, pythonpath=(),
+                                  use_multiprocessing=False,
+                                  timeout=2.0):
+    """ Check (using information from `settings` module) if there is a server running;
+      if not, start it ;  any directory in the list `pythonpath` will be added to sys.path;
+      the env variable 'COLDOC_TASKS_AUTOSTART_OPTIONS' may be used to tune this functions,
+      setting either of nocheck,noautostart
+      """
+    info = settings.COLDOC_TASKS_INFOFILE
+    sock = settings.COLDOC_TASKS_SOCKET
+    auth = getattr(settings, 'COLDOC_TASKS_PASSWORD', None)
+    logfile = getattr(settings, 'COLDOC_TASKS_LOGFILE', None)
+    proc = tasks_server_autostart(info, sock, auth,
+                                  pythonpath=pythonpath,
+                                  use_multiprocessing=use_multiprocessing,
+                                  subcmd=['django_server_start'],
+                                  logfile=logfile,
+                                  timeout=timeout)
+    settings.COLDOC_TASKS_PROC = proc
+    return proc
 
 
 ########################
