@@ -679,12 +679,17 @@ def main(argv):
         if os.environ.get('DJANGO_SETTINGS_MODULE') is None:
             logger.error('environmental variable DJANGO_SETTINGS_MODULE must be set')
             return False
+        # This is crude but it mostly works
         DJANGO_SETTINGS_MODULE = os.environ.get('DJANGO_SETTINGS_MODULE')
         a = DJANGO_SETTINGS_MODULE.replace('.','/') + '.py'
-        if not os.path.isfile(a):
-            logger.error('environmental variable DJANGO_SETTINGS_MODULE references a non exixtent file %r',a)
+        d = None
+        for j in sys.path:
+            if os.path.isdir(j) and os.path.isfile(os.path.join(j,a)):
+                d = j
+                break
+        if not d:
+            logger.error('Environmental variable DJANGO_SETTINGS_MODULE references a non exixtent file %r. Try setting PYTHONPATH',a)
             return False
-        sys.path.insert(0,'.')
         #
         # for people hooking this package into Django, this will avoid a recursive server starting
         os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] =  'noautostart'
