@@ -113,7 +113,11 @@ def get_manager(address, authkey):
 
 ########################
 
-def __socket_server(socket_, rets, id_):
+def __socket_server(socket_, access_pair, rets, id_):
+    # unpack auth from socket definition
+    assert isinstance(access_pair, (tuple,list)), access_pair
+    socket_name, auth = access_pair
+    assert auth is None or ( isinstance(auth, bytes) and len(auth) == 8)
     sent = False
     with socket_ as s:
         logger.debug('Id %s listening', id_)
@@ -121,6 +125,12 @@ def __socket_server(socket_, rets, id_):
             conn, addr = s.accept()
             with conn:
                 logger.debug('Id %s connected by %r', id_, addr)
+                if auth:
+                    conn.sendall(b'#AUTH')
+                    auth_ = conn.recv(8)
+                    if auth_ != auth:
+                        conn.sendall(b'#WRNG')
+                        break
                 conn.sendall(b'#HELO')
                 a = conn.recv(5)
                 logger.debug('Id %s message is %r', id_, a)
@@ -139,8 +149,12 @@ def __socket_server(socket_, rets, id_):
 
 
 
-def __send_message(m,F):
+def __send_message(m, F):
     assert isinstance(m,bytes) and len(m) == 5
+    # unpack auth from access_pair definition
+    F, auth = F
+    assert auth is None or ( isinstance(auth, bytes) and len(auth) == 8)
+    #
     ret = None
     if F is  None:
         return None
@@ -148,9 +162,16 @@ def __send_message(m,F):
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
         s.connect(F)
         a = s.recv(5)
+        if a == b'#AUTH':
+            if auth is None:
+                raise RuntimeError('Auth is required for %r' % F)
+            s.sendall(auth)
+            a = s.recv(5)
         if a != b'#HELO':
-            logger.warning('Unexpected hello %r', a)
-            return False
+            if auth:
+                raise RuntimeError('Wrong Auth for %r' % F)
+            else:
+                raise RuntimeError('Unexpected hello %r from %r', a, F)
         s.sendall(m)
         if m == b'#SEND':
             l = s.recv(8)
@@ -296,7 +317,7 @@ def shutdown(address, authkey):
 ######
 
 def _fork_mp_wrapper(*args, **kwargs):
-    id_, pipe, socket_, F, cmd, k , v, l = args
+    id_, pipe, socket_, access_pair_, cmd, k , v, l = args
     multiprocessing.log_to_stderr(level=l)
     #
     logger = multiprocessing.get_logger() 
@@ -309,7 +330,8 @@ def _fork_mp_wrapper(*args, **kwargs):
     pipe.send(ret)
     rets = pickle.dumps(ret)
     #
-    __socket_server(socket_, rets, id_)
+    __socket_server(socket_, access_pair_, rets, id_)
+    F = access_pair_[0]
     logger.info('Exited socket loop, removing %r', F)
     os.unlink(F)
 
@@ -363,13 +385,16 @@ def run_server(address, authkey, with_django=False, tempdir=default_tempdir):
             ## I would like to use:
             #z = pool.apply_async(c,k,v)
             ## but it hangs
+            # add auth
+            auth_ = random.randbytes(8)
+            access_pair_ = (F, auth_)
             #
-            proc = multiprocessing.Process(target=_fork_mp_wrapper, args=(id_, pipe[1], socket_, F, c, k, v, l))
+            proc = multiprocessing.Process(target=_fork_mp_wrapper, args=(id_, pipe[1], socket_, access_pair_, c, k, v, l))
             proc.name = 'coldoc_task '+id_ + ' ' + repr(c.__name__)
             proc.start()
             pipe0 = pipe[0]
             #pipe0._config['authkey'] = bytes(pipe0._config['authkey'])
-            processes[id_] = (proc, pipe0, F)
+            processes[id_] = (proc, pipe0, access_pair_)
             logger.debug('Running cmd %r ( %r , %r ), id = %r, socket = %r', c,  k, v, id_, F)
             return id_
         #
