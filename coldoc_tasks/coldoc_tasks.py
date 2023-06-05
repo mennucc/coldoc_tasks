@@ -640,9 +640,9 @@ def tasks_server_autostart(infofile, sock, auth=None, pythonpath = (),
         #
         if ok:
             _mychmod(sock)
-    #
-    if not ok:
-        logger.critical('Cannot start task process')
+        #
+        if not ok:
+            logger.critical('Cannot start task process')
     return proc
 
 def tasks_server_django_autostart(settings, pythonpath=(),
