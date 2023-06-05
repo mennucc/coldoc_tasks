@@ -82,6 +82,14 @@ __all__ = ('get_client', 'run_server', 'ping', 'status', 'shutdown', 'fork_class
            'run_cmd', 'wait', 'get_result', 'join',
            'tasks_server_readinfo', 'tasks_server_writeinfo', 'tasks_server_start', 'task_server_check')
 
+default_chmod = 0o600
+
+def _mychmod(f, mode=default_chmod):
+    try:
+        os.chmod(f, mode)
+    except:
+        logger.exception('Why cant I set chmod %r on %r', mode, f)
+
 ##########################
 
 actions = ('ping__','status__','shutdown__',
@@ -340,7 +348,7 @@ def run_server(address, authkey, with_django=False, tempdir=default_tempdir):
             socket_ = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             socket_.bind(F)
             socket_.listen(2)
-            os.chmod(F,0o600)
+            _mychmod(F)
             #
             if pipe is None:
                 pipe = multiprocessing.Pipe()
@@ -514,7 +522,7 @@ def tasks_server_readinfo(infofile):
 
 def tasks_server_writeinfo(address, authkey, pid, infofile):
     with open(infofile,'w') as F:
-        os.chmod(infofile,0o600)
+        _mychmod(infofile)
         F.write('pid=%d\naddress=%s\nauth64=%s\n' %\
                 (os.getpid(), repr(address),
                  base64.b32encode(authkey).decode('ascii')))
