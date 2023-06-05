@@ -164,6 +164,33 @@ class fork_class(fork_class_base):
                 pass
 
 
+######################################
+class nofork_class(fork_class_base):
+    "class that runs a job as usual, and returns results or raises exception"
+    def __init__(self, use_fork = True):
+        super().__init__(use_fork = use_fork)
+        self.__ret = (2 , RuntimeError('Program bug') )
+        self.__pickle_exception = None
+    #
+    @staticmethod
+    def can_fork():
+        return False
+    #
+    def run(self, cmd, *k, **v):
+        assert self.already_run is False
+        try:
+            self.__ret = (0, cmd(*k, **v))
+        except Exception as e:
+            self.__ret = (1, e)
+        self.already_run = True
+    def wait(self, timeout=None):
+        assert self.already_run is True
+        if self.__ret[0] :
+            raise self.__ret[1]
+        return self.__ret[1]
+
+########
+
 def main(argv):
     if argv  and argv[0] == 'test':
         from task_utils import test_fork
