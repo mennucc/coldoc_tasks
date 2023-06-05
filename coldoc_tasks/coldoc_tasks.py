@@ -309,8 +309,6 @@ def _fork_mp_wrapper(*args, **kwargs):
 def run_server(address, authkey, with_django=False, tempdir=default_tempdir):
     manager = multiprocessing.managers.SyncManager(address=address, authkey=authkey)
     #
-    run_with_subprocess = False
-    #
     return_code = True
     # currently tje code work better without a subprocess
     run_with_subprocess = False
