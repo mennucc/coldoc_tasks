@@ -518,15 +518,16 @@ def tasks_server_readinfo(infofile):
         #
     return address, authkey, pid
 
-def tasks_server_writeinfo(address, authkey, pid, infofile):
+def tasks_server_writeinfo(infofile, address, authkey, pid=None):
     with open(infofile,'w') as F:
         _mychmod(infofile)
-        F.write('pid=%d\naddress=%s\nauth64=%s\n' %\
-                (os.getpid(), repr(address),
-                 base64.b32encode(authkey).decode('ascii')))
+        if pid:
+            F.write('pid=%d\n' % (pid,) )
+        F.write('address=%s\nauth64=%s\n' %\
+                (repr(address), base64.b32encode(authkey).decode('ascii')))
 
 def __tasks_server_start_nolock(address, authkey, infofile, with_django=None, tempdir=default_tempdir):
-    tasks_server_writeinfo(address, authkey, os.getpid(), infofile)
+    tasks_server_writeinfo(infofile, address, authkey, os.getpid())
     ret = False
     try:
         ret = run_server(address, authkey, with_django, tempdir)
