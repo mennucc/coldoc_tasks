@@ -84,7 +84,7 @@ from coldoc_tasks.simple_tasks import fork_class_base
 
 
 
-__all__ = ('get_client', 'run_server', 'ping', 'status', 'shutdown', 'fork_class',
+__all__ = ('get_client', 'run_server', 'ping', 'status', 'shutdown', 'test', 'fork_class',
            'run_cmd', 'wait', 'get_result', 'join',
            'tasks_server_autostart', 'tasks_server_django_autostart',
            'tasks_server_readinfo', 'tasks_server_writeinfo', 'tasks_server_start', 'task_server_check')
@@ -315,6 +315,24 @@ def shutdown(address, authkey):
         return manager.shutdown__()
     except Exception as E:
         logger.warning('When shutdown %r',E)
+
+def test(address, authkey):
+    import coldoc_tasks.task_utils as task_utils
+    logger.setLevel(logging.INFO)
+    FC = functools.partial(fork_class, address=address, authkey=authkey)
+    task_utils.logger.setLevel(logging.INFO)
+    print('*' * 80)
+    err = task_utils.test_fork(fork_class=FC)
+    print('*' * 80)
+    FCN = functools.partial(fork_class, use_fork = False, address=address, authkey=authkey)
+    err += task_utils.test_fork(fork_class=FCN)
+    print('*' * 80)
+    if os.environ.get('DJANGO_SETTINGS_MODULE') == 'ColDocDjango.settings':
+        f = FC()
+        f.run(__countthem)
+        print('---- test of reading the Django database: there are %r DMetadata objects' % f.wait())
+    return ret
+
 
 ############## server code
 
@@ -777,20 +795,7 @@ def main(argv):
         print(str(manager.status__()))
         return True
     elif 'test' == argv[0] :
-        import coldoc_tasks.task_utils as task_utils
-        logger.setLevel(logging.INFO)
-        FC = functools.partial(fork_class, address=address, authkey=authkey)
-        task_utils.logger.setLevel(logging.INFO)
-        print('*' * 80)
-        err = task_utils.test_fork(fork_class=FC)
-        print('*' * 80)
-        FCN = functools.partial(fork_class, use_fork = False, address=address, authkey=authkey)
-        err += task_utils.test_fork(fork_class=FCN)
-        print('*' * 80)
-        if os.environ.get('DJANGO_SETTINGS_MODULE') == 'ColDocDjango.settings':
-            f = FC()
-            f.run(__countthem)
-            print('---- test of reading the Django database: there are %r DMetadata objects' % f.wait())
+        err = test(address, authkey)
         return err == 0
     elif 'test_hanging'  == argv[0] :
         manager = get_manager(address, authkey)
