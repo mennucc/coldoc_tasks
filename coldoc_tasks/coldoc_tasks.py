@@ -60,6 +60,12 @@ and writes the infofile
 import os, sys, time, pickle, base64, lockfile, argparse, functools, multiprocessing, multiprocessing.managers
 import random, socket, struct, tempfile
 
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
+
 default_tempdir = tempfile.gettempdir()
 
 import logging
@@ -550,7 +556,14 @@ def task_server_check(info):
     returns  `status, sock, auth, pid` , where `status` is a boolean"""
     if os.path.isfile(info):
         sock, auth, pid = tasks_server_readinfo(info)
-        if ping(address=sock, authkey=auth):
+        if not( sock and auth):
+            logger.error('One of address, authkey is missing from %r',info)
+            return False, sock, auth, pid
+        if psutil and pid and not psutil.pid_exists(pid):
+            logger.warning('Tasks server pid %r does not exist', pid)
+            pid = None
+            return False, sock, auth, pid
+        if pid and ping(address=sock, authkey=auth):
             return True, sock, auth, pid
         else:
             logger.warning('Tasks server pid %r is not responding', pid)
