@@ -686,6 +686,9 @@ def main(argv):
             return False
         sys.path.insert(0,'.')
         #
+        # for people hooking this package into Django, this will avoid a recursive server starting
+        os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] =  'noautostart'
+        #
         import django
         django.setup()
         from django.conf import settings
