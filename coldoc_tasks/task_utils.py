@@ -1,4 +1,4 @@
-import sys, os, time, pickle
+import sys, os, time, pickle, functools
 from os.path import join as osjoin
 
 
