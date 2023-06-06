@@ -108,7 +108,7 @@ actions = ('ping__','status__','shutdown__',
            'run_cmd__','get_result_join__','join__','get_wait_socket__',
            'terminate__')
 
-@functools.lru_cache
+@functools.lru_cache(100)
 def get_manager(address, authkey):
     manager = multiprocessing.managers.SyncManager(address=address, authkey=authkey)
     for j in actions:

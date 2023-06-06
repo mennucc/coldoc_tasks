@@ -58,7 +58,7 @@ def import_module_from_string(name: str, source: str):
     return module
 
 
-@functools.lru_cache
+@functools.lru_cache(100)
 def get_client(celeryconfig_):
     """ get celery_app from celeryconfig; `celeryconfig` may be:
       `str` that is a filename to be loaded , or 
