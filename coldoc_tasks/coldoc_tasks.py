@@ -634,7 +634,7 @@ def task_server_check(info):
 
 
 
-def tasks_daemon_autostart(infofile, sock, auth=None,
+def tasks_daemon_autostart(infofile, sock=None, auth=None,
                            pythonpath=(),
                            cwd=None,
                            logfile = None,
@@ -649,6 +649,7 @@ def tasks_daemon_autostart(infofile, sock, auth=None,
     (either as `subprocess.Popen` or `multiprocessing.Process` instance).
    
     Arguments notes: 
+        `sock` is the socket (if `None`, it will be read from `infofile`, that must exist);
        if `auth` is `None`, generate a random one;
        any directory in the list `pythonpath` will be added to sys.path;
        the env variable 'COLDOC_TASKS_AUTOSTART_OPTIONS' may be used to tune this functions,
@@ -667,12 +668,17 @@ def tasks_daemon_autostart(infofile, sock, auth=None,
         ok, sock_, auth_, pid_ = task_server_check(infofile)
         if ok:
             return pid_
+    else:
+        sock_ = auth_ = pid_  = None,
     #
     proc = None
     if not ok and 'noautostart' not in opt:
         #
         logger.info('starting task server')
         #
+        sock = sock if sock is not None else sock_
+        if sock is None:
+            raise RuntimeError('The argument `sock` is not set, and no `infofile`')
         auth = auth or os.urandom(8)
         assert isinstance(auth, bytes)
         if use_multiprocessing:
