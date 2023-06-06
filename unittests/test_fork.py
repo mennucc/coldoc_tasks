@@ -122,6 +122,13 @@ class TestForkColDoc(Base,unittest.TestCase):
         coldoc_tasks.coldoc_tasks.tasks_server_join(cls.proc)
 
 
+    def test_direct_run_cmd(self):
+        manager = coldoc_tasks.coldoc_tasks.get_manager(self.address, self.authkey)
+        id_ = coldoc_tasks.coldoc_tasks.run_cmd(manager, str, (344,), {})
+        coldoc_tasks.coldoc_tasks.wait(id_, manager)
+        r = coldoc_tasks.coldoc_tasks.get_result(id_, manager)
+        self.assertEqual(r , (0, '344') )
+
 if __name__ == '__main__':
     #
     unittest.main()
