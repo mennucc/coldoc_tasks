@@ -95,12 +95,15 @@ class TestForkColDoc(Base,unittest.TestCase):
         cls.infofile = osjoin(T,'info')
         #
         if 1: 
+            logfile = tempfile.NamedTemporaryFile()
             cls.proc = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(cls.infofile, cls.address, cls.authkey, 
                                                                     tempdir=cls.tempdir,
+                                                                    logfile=logfile.name,
                                                                     pythonpath=(sourcedir,testdir),
                                                                     )
             if not cls.proc:
-                cls.logger.critical("could not start server")
+                cls.logger.critical("could not start server! log follows \n" + ('v' * 70) +\
+                                    open(logfile.name).read() + '\n' +  ('^' * 70))
                 raise Exception("could not start server")
         else:
             target = coldoc_tasks.coldoc_tasks.run_server
