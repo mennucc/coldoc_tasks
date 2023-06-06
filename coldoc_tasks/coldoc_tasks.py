@@ -58,7 +58,7 @@ and writes the infofile
 
 
 import os, sys, time, pickle, base64, lockfile, argparse, functools, multiprocessing, multiprocessing.managers
-import random, socket, struct, tempfile
+import random, socket, struct, tempfile, copy
 
 try:
     import psutil
@@ -479,7 +479,7 @@ def run_server(address, authkey, with_django=False, tempdir=default_tempdir):
                 logger.error('No process by id %r',id_)
         #
         def initializer():
-            a = set(manager._registry)
+            a = set(copy.deepcopy(manager._registry))
             manager.register('run_cmd__', run_cmd__)
             manager.register('get_result_join__', get_result_join__)
             manager.register('join__', join__)
