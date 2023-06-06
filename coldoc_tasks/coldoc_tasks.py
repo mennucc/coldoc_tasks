@@ -641,6 +641,7 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
                            opt = None,
                            tempdir = default_tempdir,
                            timeout = 2.0,
+                           force = False,
                            # this option is used to wrap this function for Django...
                            subcmd=None,
                            ):
@@ -651,10 +652,13 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
     Arguments notes: 
         `sock` is the socket (if `None`, it will be read from `infofile`, that must exist);
        if `auth` is `None`, generate a random one;
-       any directory in the list `pythonpath` will be added to sys.path;
-       the env variable 'COLDOC_TASKS_AUTOSTART_OPTIONS' may be used to tune this functions,
-        setting either of nocheck,noautostart ; the argument `opt` can override that.
-        
+       if `force` is True, and the server cannot be contacted, remove lock and socket;
+       any directory in the list `pythonpath` will be added to sys.path.
+       
+       
+    The env variable 'COLDOC_TASKS_AUTOSTART_OPTIONS' may be used to tune this functions,
+    it accepts a comma-separated list of keywords from `nocheck`, `noautostart`, `force` .
+    The argument `opt` overrides that env variable. The argument `force`, if set, ignores the previous two.
       """
     # this does not work OK
     use_multiprocessing=False
@@ -670,6 +674,16 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
             return pid_
     else:
         sock_ = auth_ = pid_  = None,
+    #
+    if force is None:
+        force = 'force' in opt
+    if force and not ok:
+        if os.path.exists(infofile+'.lock'):
+            logger.warning('Removing stale lock %r', (infofile+'.lock',))
+            os.unlink(infofile+'.lock')
+        if isinstance(sock_,str) and os.path.exists(sock_):
+            logger.warning('Removing stale socket %r', (sock_,))
+            os.unlink(sock_)
     #
     proc = None
     if not ok and 'noautostart' not in opt:
