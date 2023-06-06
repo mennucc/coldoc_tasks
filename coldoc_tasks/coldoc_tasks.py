@@ -741,6 +741,20 @@ def tasks_server_django_autostart(settings, pythonpath=(),
     settings.COLDOC_TASKS_PROC = proc
     return proc
 
+def tasks_server_join(proc):
+    " join, that is, wait for subprocess to end; to be used after `shutdown` is called, to avoid zombies"
+    if isinstance(proc, int):
+        if psutil:
+            if psutil.pid_exists(proc):
+                os.wait(proc)
+    elif hasattr(proc, 'join'):
+        proc.join()
+    elif hasattr(proc, 'wait'):
+        proc.wait()
+    else:
+        logger.warning("should wait for process %r", proc)
+
+
 
 ########################
 
