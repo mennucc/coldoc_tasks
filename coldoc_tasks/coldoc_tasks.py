@@ -204,7 +204,7 @@ def __send_message(m, F):
 
 def run_cmd(manager, cmd, args, kwarks):
     " run a command "
-    proxy = self.__manager.run_cmd__(cmd, args, kwarks)
+    proxy = manager.run_cmd__(cmd, args, kwarks)
     return proxy._getvalue()
 
 def wait(id_, manager):
