@@ -89,9 +89,9 @@ from coldoc_tasks.simple_tasks import fork_class_base
 
 
 
-__all__ = ('get_client', 'run_server', 'ping', 'status', 'shutdown', 'test', 'fork_class',
+__all__ = ('get_manager', 'run_server', 'ping', 'status', 'shutdown', 'test', 'fork_class',
            'run_cmd', 'wait', 'get_result', 'join',
-           'tasks_server_autostart', 'tasks_server_django_autostart',
+           'tasks_daemon_autostart', 'tasks_daemon_django_autostart',
            'tasks_server_readinfo', 'tasks_server_writeinfo', 'tasks_server_start', 'task_server_check')
 
 default_chmod = 0o600
