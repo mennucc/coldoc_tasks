@@ -718,12 +718,7 @@ def tasks_daemon_autostart(infofile, sock, auth=None,
                                     env = env,
                                     stderr=subprocess.STDOUT, text=True,  cwd=cwd)
         # check it
-        ok = False
-        for j in range(int(float(timeout) * 10.),0,-1):
-            ok = ping(address=sock, authkey=auth, warn=False)
-            if ok: break
-            time.sleep(0.1)
-        #
+        ok = server_wait(sock, auth,timeout)
         if ok:
             _mychmod(sock)
         #
