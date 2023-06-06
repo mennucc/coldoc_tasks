@@ -542,6 +542,16 @@ def run_server(address, authkey, with_django=False, tempdir=default_tempdir):
         return_code =  False
     return return_code
 
+
+def server_wait(address, authkey, timeout = 2.0):
+    " try pinging, up to timeout"
+    ok = False
+    for j in range(int(float(timeout) * 20.)):
+        ok = ping(address, authkey, warn=False)
+        if ok: break
+        time.sleep(0.05)
+    return ok
+
 ######################## code to start server
 
 def tasks_server_readinfo(infofile):
