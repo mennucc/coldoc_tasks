@@ -21,12 +21,7 @@ import coldoc_tasks.simple_tasks, coldoc_tasks.coldoc_tasks
 
 from coldoc_tasks.task_utils import __fork_reentrat_test as fork_reentrat_test
 
-def fakesum(a,b,c):
-    return a + b + c
-
-def fakediv(a,b):
-    return a / b
-
+from fakejobs import *
 
 class Base(object):
 
@@ -92,16 +87,17 @@ class TestForkColDoc(Base,unittest.TestCase):
     #
     @classmethod
     def setUpClass(cls):
+        #
         cls.tempdir = T = tempfile.mkdtemp()
         cls.address = osjoin(T,'socket')
         cls.authkey = os.urandom(9)
         cls.logger = logging.getLogger('coldoc_tasks')
         cls.infofile = osjoin(T,'info')
-        d = os.path.dirname(os.path.dirname(__file__))
+        #
         if 1: 
             cls.proc = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(cls.infofile, cls.address, cls.authkey, 
                                                                     tempdir=cls.tempdir,
-                                                                    pythonpath=(d),
+                                                                    pythonpath=(sourcedir,testdir),
                                                                     )
             if not cls.proc:
                 cls.logger.critical("could not start server")
