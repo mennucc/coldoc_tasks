@@ -58,7 +58,7 @@ and writes the infofile
 
 
 import os, sys, time, pickle, base64, functools, multiprocessing, multiprocessing.managers
-import random, socket, struct, tempfile, copy
+import random, socket, struct, tempfile, copy, threading
 
 try:
     import psutil
@@ -727,10 +727,8 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
                                             prefix='coldoc_tasks_', suffix='.log')
             elif isinstance(logfile, str):
                 logfile_ = open(logfile, 'a')
-                logfile_.name = logfile
             else:
                 logfile_ = open(os.devnull, 'a')
-                logfile_.name = '(was not saved)'
             #
             cmd = os.path.realpath(__file__)
             args = ['python3', cmd]
@@ -753,7 +751,11 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
             _mychmod(sock)
         #
         if not ok:
-            logger.critical('Cannot start task process, see %r', logfile_.name)
+            logger.critical('Cannot start task process, see %r', getattr(logfile_,'name', logfile_))
+            if not use_multiprocessing:
+                jt = threading.Thread(target=proc.wait)
+                jt.run()
+            proc = False
     return proc
 
 def tasks_daemon_django_autostart(settings, **kwargs):
