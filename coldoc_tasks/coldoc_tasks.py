@@ -57,13 +57,18 @@ and writes the infofile
 """
 
 
-import os, sys, time, pickle, base64, lockfile, argparse, functools, multiprocessing, multiprocessing.managers
+import os, sys, time, pickle, base64, functools, multiprocessing, multiprocessing.managers
 import random, socket, struct, tempfile, copy
 
 try:
     import psutil
 except ImportError:
     psutil = None
+
+try:
+    import lockfile
+except ImportError:
+    lockfile = None
 
 
 default_tempdir = tempfile.gettempdir()
