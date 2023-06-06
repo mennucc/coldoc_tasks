@@ -674,6 +674,7 @@ def tasks_daemon_autostart(infofile, sock, auth=None,
         logger.info('starting task server')
         #
         auth = auth or os.urandom(8)
+        assert isinstance(auth, bytes)
         if use_multiprocessing:
             import multiprocessing
             # FIXME: this fails in some cases, since django is not reentrant
@@ -766,6 +767,7 @@ def __countthem():
 
 
 def main(argv):
+    assert isinstance(argv, (tuple, list))
     if argv[0].startswith('django_server_'):
         if os.environ.get('DJANGO_SETTINGS_MODULE') is None:
             logger.error('environmental variable DJANGO_SETTINGS_MODULE must be set')
