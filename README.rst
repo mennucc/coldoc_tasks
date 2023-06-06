@@ -37,3 +37,10 @@ License
 
 See file `LICENSE.txt` in the code distribution
 
+Tests
+-----
+
+.. image:: https://github.com/mennucc/coldoc_tasks/actions/workflows/test.yaml/badge.svg
+  :alt: Test results
+
+
