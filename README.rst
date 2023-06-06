@@ -9,7 +9,7 @@ It is used in the
 `ColDoc project <https://mennucc.github.io/ColDoc_project>`_
 
 It is a simpler alternative to fancier solutions, such as 
-`*Celery* <https://mennucc.github.io/ColDoc_project/build/html/install.html>`_
+`Celery <https://docs.celeryq.dev/en/stable/>`_ .
 At the same time, this package contains a wrapper, so that
 the code using this package can be switched to using *Celery*
 if later needed.
