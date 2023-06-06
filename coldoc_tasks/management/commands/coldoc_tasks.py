@@ -57,9 +57,9 @@ class Command(BaseCommand):
         if is_dev:
             # raise last Exception is exist
             autoreload.raise_last_exception()
-        #
-        if log_std:
-            _configure_log_std()
+        ### FIXME
+        #if log_std:
+        #    pass
         #
         if subcmd == 'autostart':
             return tasks_daemon_django_autostart(settings, opt='')
