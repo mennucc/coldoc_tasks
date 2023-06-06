@@ -658,13 +658,17 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
         `sock` is the socket (if `None`, it will be read from `infofile`, that must exist);
        if `auth` is `None`, generate a random one;
        if `force` is True, and the server cannot be contacted, remove lock and socket;
-       any directory in the list `pythonpath` will be added to sys.path.
-       
+       `pythonpath` may be a string, in the format of PYTHONPATH, or a list:
+        it  will be added to sys.path.
        
     The env variable 'COLDOC_TASKS_AUTOSTART_OPTIONS' may be used to tune this functions,
     it accepts a comma-separated list of keywords from `nocheck`, `noautostart`, `force` .
     The argument `opt` overrides that env variable. The argument `force`, if set, ignores the previous two.
       """
+    #
+    if isinstance(pythonpath, str):
+        pythonpath = pythonpath.split(os.pathsep)
+    assert isinstance(pythonpath, (list, tuple))
     # this does not work OK
     use_multiprocessing=False
     #
