@@ -645,7 +645,7 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
                            # this option is used to wrap this function for Django...
                            subcmd=None,
                            ):
-    """ Check (using information from `settings` module) if there is a server running;
+    """ Check if there is a server running using `infofile`;
     if there is, return the PID,      if not, start it (as a subprocess), and return the process
     (either as `subprocess.Popen` or `multiprocessing.Process` instance).
    
