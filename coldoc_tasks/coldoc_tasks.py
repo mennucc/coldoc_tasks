@@ -633,17 +633,30 @@ def task_server_check(info):
     return False, None, None, None
 
 
-def tasks_server_autostart(infofile, sock, auth=None, pythonpath = (),
-                           cwd=None, use_multiprocessing=False, subcmd=None,
+
+def tasks_daemon_autostart(infofile, sock, auth=None,
+                           pythonpath=(),
+                           cwd=None,
                            logfile = None,
                            opt = None,
-                           timeout = 2.0):
-    """ check (using `infofile`) if there is a server running;
-         if not, use `sock` `auth` to start it ; if `auth` is `None`, generate a random one;
-        any directory in the list `pythonpath` will be added to sys.path;
-        the env variable 'COLDOC_TASKS_AUTOSTART_OPTIONS' may be used to tune this functions,
-      setting either of nocheck,noautostart ; the argument `opt` can override that
+                           tempdir = default_tempdir,
+                           timeout = 2.0,
+                           # this option is used to wrap this function for Django...
+                           subcmd=None,
+                           ):
+    """ Check (using information from `settings` module) if there is a server running;
+    if there is, return the PID,      if not, start it (as a subprocess), and return the process
+    (either as `subprocess.Popen` or `multiprocessing.Process` instance).
+   
+    Arguments notes: 
+       if `auth` is `None`, generate a random one;
+       any directory in the list `pythonpath` will be added to sys.path;
+       the env variable 'COLDOC_TASKS_AUTOSTART_OPTIONS' may be used to tune this functions,
+        setting either of nocheck,noautostart ; the argument `opt` can override that.
+        
       """
+    # this does not work OK
+    use_multiprocessing=False
     #
     ok = False
     if opt is None:
@@ -718,26 +731,20 @@ def tasks_server_autostart(infofile, sock, auth=None, pythonpath = (),
             logger.critical('Cannot start task process, see %r', logfile_.name)
     return proc
 
-def tasks_server_django_autostart(settings, pythonpath=(),
-                                  use_multiprocessing=False,
-                                  opt = '',
-                                  timeout=2.0):
+def tasks_daemon_django_autostart(settings, **kwargs):
     """ Check (using information from `settings` module) if there is a server running;
-      if not, start it ;  any directory in the list `pythonpath` will be added to sys.path;
-      the env variable 'COLDOC_TASKS_AUTOSTART_OPTIONS' may be used to tune this functions,
-      setting either of nocheck,noautostart ; the argument `opt` can override that
+    if there is, return the PID,      if not, start it (as a subprocess), and return the process.
+    For keyword arguments, see `tasks_daemon_autostart`.
       """
     info = settings.COLDOC_TASKS_INFOFILE
     sock = settings.COLDOC_TASKS_SOCKET
     auth = getattr(settings, 'COLDOC_TASKS_PASSWORD', None)
     logfile = getattr(settings, 'COLDOC_TASKS_LOGFILE', None)
-    proc = tasks_server_autostart(info, sock, auth,
-                                  pythonpath=pythonpath,
-                                  use_multiprocessing=use_multiprocessing,
-                                  subcmd=['django_server_start'],
-                                  logfile=logfile,
-                                  opt = opt,
-                                  timeout=timeout)
+    #
+    kwargs['auth'] = auth
+    kwargs['logfile'] = logfile
+    kwargs['subcmd'] = ['django_server_start']
+    proc = tasks_daemon_autostart(info, sock, **kwargs)
     settings.COLDOC_TASKS_PROC = proc
     return proc
 

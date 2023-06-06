@@ -11,7 +11,7 @@ from django.db import close_old_connections
 
 logger = logging.getLogger(__name__)
 
-from coldoc_tasks.coldoc_tasks import main, tasks_server_django_autostart, tasks_server_readinfo, tasks_server_start, ping, test, status
+from coldoc_tasks.coldoc_tasks import main, tasks_daemon_django_autostart, tasks_server_readinfo, tasks_server_start, ping, test, status
 
 class Command(BaseCommand):
     help = 'Start or ping or test the ColDoc task server'
@@ -62,7 +62,7 @@ class Command(BaseCommand):
             _configure_log_std()
         #
         if subcmd == 'autostart':
-            return tasks_server_django_autostart(settings, opt='')
+            return tasks_daemon_django_autostart(settings, opt='')
         #
         info = getattr(settings, 'COLDOC_TASKS_INFOFILE', False)
         if not info:
