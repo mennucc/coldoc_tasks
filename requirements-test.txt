@@ -1,0 +1,7 @@
+celery[redis]>=5
+lockfile
+psutil
+pytest>=6
+pytest-cov>=2.5
+coverage>=5.3
+coveralls>=2.2
