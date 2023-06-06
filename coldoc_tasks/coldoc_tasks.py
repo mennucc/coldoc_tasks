@@ -393,6 +393,13 @@ def run_server(address, authkey, with_django=False, tempdir=default_tempdir):
             logger.info('********** %r', d)
         #
         randomsource = random.Random(os.urandom(8))
+        #
+        if  hasattr(randomsource,'randbytes'):
+            randbytes = randomsource.randbytes
+        else: #older Python
+            def randbytes(n):
+                return randomsource.getrandbits(n * 8).to_bytes(n, 'little')
+        #
         # used if run_with_subprocess is True
         __do_run = multiprocessing.Value('i')
         def stop_server__():
@@ -401,7 +408,7 @@ def run_server(address, authkey, with_django=False, tempdir=default_tempdir):
         #
         Nooone = (None, None, None)
         def run_cmd__(c,k,v,pipe=None):
-            id_ = base64.b64encode(randomsource.randbytes(9),altchars=b'-_').decode('ascii')
+            id_ = base64.b64encode(randbytes(9),altchars=b'-_').decode('ascii')
             F = os.path.join(tempdir, 'socket_' + id_)
             socket_ = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             socket_.bind(F)
@@ -416,7 +423,7 @@ def run_server(address, authkey, with_django=False, tempdir=default_tempdir):
             #z = pool.apply_async(c,k,v)
             ## but it hangs
             # add auth
-            auth_ = randomsource.randbytes(8)
+            auth_ = randbytes(8)
             access_pair_ = (F, auth_)
             #
             proc = multiprocessing.Process(target=_fork_mp_wrapper, args=(id_, pipe[1], socket_, access_pair_, c, k, v, l))
