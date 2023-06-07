@@ -59,6 +59,7 @@ and writes the infofile
 
 import os, sys, time, pickle, base64, functools, multiprocessing, multiprocessing.managers
 import random, socket, struct, tempfile, copy, threading
+from pathlib  import Path
 
 try:
     import psutil
@@ -673,11 +674,6 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
     The argument `opt` overrides that env variable. The argument `force`, if set, ignores the previous two.
       """
     #
-    if isinstance(pythonpath, str):
-        pythonpath = pythonpath.split(os.pathsep)
-    assert isinstance(pythonpath, (list, tuple))
-    # this does not work OK
-    use_multiprocessing=False
     #
     ok = False
     if opt is None:
@@ -700,6 +696,22 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
         if isinstance(sock_,str) and os.path.exists(sock_):
             logger.warning('Removing stale socket %r', (sock_,))
             os.unlink(sock_)
+    #
+    if isinstance(pythonpath, Path):
+        pythonpath = [pythonpath]
+    elif isinstance(pythonpath, str):
+        pythonpath = pythonpath.split(os.pathsep)
+    elif isinstance(pythonpath, bytes):
+        pythonpath = pythonpath.split(os.pathsep.encode())
+    assert isinstance(pythonpath, (list, tuple))
+    # convert Paths to str
+    pythonpath = list(map(lambda x: str(x) if isinstance(x,Path) else x, pythonpath))
+    # convert bytes to str
+    pythonpath = list(map(lambda x: x.decode('utf8','replace') if isinstance(x,bytes) else x, pythonpath))
+    if not all(isinstance(x,str) for  x in pythonpath):
+        logger.error('Weird pythonpath %r', pythonpath)
+    # this does not work OK
+    use_multiprocessing=False
     #
     proc = None
     if not ok and 'noautostart' not in opt:
