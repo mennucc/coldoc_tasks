@@ -819,8 +819,8 @@ def main(argv):
                 d = j
                 break
         if not d:
-            logger.error('Environmental variable DJANGO_SETTINGS_MODULE references a non exixtent file %r. Try setting PYTHONPATH',a)
-            return False
+            logger.error('Environmental variable DJANGO_SETTINGS_MODULE references a non exixtent file %r. sys.path is\n' +\
+                         str(sys.path) +    '\nTry setting PYTHONPATH',a)
         #
         # for people hooking this package into Django, this will avoid a recursive server starting
         os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] =  'noautostart'
