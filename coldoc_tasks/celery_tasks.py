@@ -190,7 +190,7 @@ def run_server(celeryconfig=None, with_django=None):
         import django
         django.setup()
         from django.conf import settings
-        celeryconfig = settings.CELERYCONFIG
+        celeryconfig = settings.COLDOC_TASKS_CELERYCONFIG
     #
     app = get_client(celeryconfig)
     if app is None:
