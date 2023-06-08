@@ -665,6 +665,7 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
     Arguments notes: 
         `sock` is the socket (if `None`, it will be read from `infofile`, that must exist);
        if `auth` is `None`, generate a random one;
+       if `logfile` is `True`, will create a temporary files to store logs;
        if `force` is True, and the server cannot be contacted, remove lock and socket;
        `pythonpath` may be a string, in the format of PYTHONPATH, or a list:
         it  will be added to sys.path.
@@ -740,13 +741,15 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
                 os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] =  flag
             proc.start()
         else:
-            if logfile is None:
+            if logfile is True:
                 logfile_ = tempfile.NamedTemporaryFile(dir=os.path.dirname(infofile),
                                             delete=False,
                                             prefix='coldoc_tasks_', suffix='.log')
-            elif isinstance(logfile, str):
+            elif isinstance(logfile, (str,bytes,Path)):
                 logfile_ = open(logfile, 'a')
             else:
+                if logfile is not None:
+                    logger.error('parameter `logfile` is of unsupported type %r', type(logfile))
                 logfile_ = open(os.devnull, 'a')
             #
             cmd = os.path.realpath(__file__)
