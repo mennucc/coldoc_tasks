@@ -5,6 +5,11 @@ from os.path import join as osjoin
 import logging
 logger = logging.getLogger(__name__)
 
+try:
+    import celery
+except ImportError:
+    celery = None
+
 
 ####
 
