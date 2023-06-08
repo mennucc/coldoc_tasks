@@ -659,8 +659,8 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
                            subcmd=None,
                            ):
     """ Check if there is a server running using `infofile`;
-    if there is, return the PID,      if not, start it (as a subprocess), and return the process
-    (either as `subprocess.Popen` or `multiprocessing.Process` instance).
+    if there is, return (PID, infofile),      if not, start it (as a subprocess), and return(`proc`, `infofile`)
+    (where `proc` is either a `subprocess.Popen` or `multiprocessing.Process` instance),
    
     Arguments notes: 
         `sock` is the socket (if `None`, it will be read from `infofile`, that must exist);
@@ -684,7 +684,7 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
     if 'nocheck' not in opt:
         ok, sock_, auth_, pid_ = task_server_check(infofile)
         if ok:
-            return pid_
+            return pid_, infofile
     else:
         sock_ = auth_ = pid_  = None,
     #
@@ -778,7 +778,7 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
                 jt = threading.Thread(target=proc.wait)
                 jt.run()
             proc = False
-    return proc
+    return proc, infofile
 
 def tasks_daemon_django_autostart(settings, **kwargs):
     """ Check (using information from `settings` module) if there is a server running;
@@ -793,9 +793,11 @@ def tasks_daemon_django_autostart(settings, **kwargs):
     kwargs['auth'] = auth
     kwargs['logfile'] = logfile
     kwargs['subcmd'] = ['django_server_start']
-    proc = tasks_daemon_autostart(info, sock, **kwargs)
-    settings.COLDOC_TASKS_PROC = proc
-    return proc
+    proc, info = tasks_daemon_autostart(**kwargs)
+    if proc:
+        settings.COLDOC_TASKS_PROC = proc
+        settings.COLDOC_TASKS_INFOFILE = info
+    return proc, info
 
 def tasks_server_join(proc):
     " join, that is, wait for subprocess to end; to be used after `shutdown` is called, to avoid zombies"
