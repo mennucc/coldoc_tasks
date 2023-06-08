@@ -782,6 +782,9 @@ def tasks_daemon_autostart(infofile=None, sock=None, auth=None,
             env['COLDOC_TASKS_AUTOSTART_OPTIONS'] = 'nocheck,noautostart'
             if pythonpath:
                 env['PYTHONPATH'] = os.pathsep.join(pythonpath)
+            if tempdir:
+                for j in ('TMPDIR', 'TEMP', 'TMP'):
+                    env[j] = str(tempdir)
             import subprocess
             proc = subprocess.Popen(args, stdin=open(os.devnull), stdout=logfile_,
                                     env = env,
