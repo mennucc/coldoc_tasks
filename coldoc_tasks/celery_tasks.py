@@ -31,6 +31,7 @@ if __name__ == '__main__':
 
 
 from coldoc_tasks.simple_tasks import fork_class_base
+from coldoc_tasks.exceptions import *
 
 ####################### celery machinery
 try:
@@ -180,7 +181,9 @@ class fork_class(fork_class_base):
                 with celery.result.allow_join_result():
                     self.__ret = self.__cmd.get(timeout=timeout)
             except celery.exceptions.TaskRevokedError as E:
-                raise RuntimeError('Process %r terminated : %r' % ( self.__cmd_name, E) )
+                raise ColdocTasksProcessLookupError('Process %r terminated : %r' % ( self.__cmd_name, E) )
+            except celery.exceptions.TimeoutError as E:
+                raise ColdocTasksTimeoutError('For cmd %r job %r ', self.__cmd, self.__proc)
         return self.__ret
 
 def run_server(celeryconfig=None, with_django=None):

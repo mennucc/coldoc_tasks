@@ -87,7 +87,7 @@ if __name__ == '__main__':
     
 
 from coldoc_tasks.simple_tasks import fork_class_base
-
+from coldoc_tasks.exceptions import *
 
 
 __all__ = ('get_manager', 'run_server', 'ping', 'status', 'shutdown', 'test', 'fork_class',
@@ -288,7 +288,7 @@ class fork_class(fork_class_base):
             try:
                 self.__ret = get_result(self.__cmd_id, self.__manager)
                 if self.__ret is None:
-                    raise RuntimeError('Process has disappeared: %s',self.__cmd_id)
+                    raise ColdocTasksTimeoutError('Process has disappeared: %s',self.__cmd_id)
                 self.__manager.join__(self.__cmd_id)
             except Exception as E:
                 raise RuntimeError('Process %r exception on wait : %r' % ( self.__cmd_name, E) )
