@@ -646,8 +646,30 @@ def task_server_check(info):
     return False, None, None, None
 
 
+def _fix_parameters(infofile=None, sock=None, auth=None,
+                    tempdir = default_tempdir):
+    ok = sock_ = auth_ = pid_ = mytempdir = None
+    if isinstance(infofile, (str, bytes, Path)):
+        if  os.path.isfile(infofile):
+            sock_, auth_, pid_ = tasks_server_readinfo(infofile)
+    else:
+        if infofile is not None:
+            logger.warning('Unsupported type for infofile: %r', infofile)
+        # TODO FIXME this temporary subdir should be deleted on end
+        mytempdir = tempfile.mkdtemp(prefix='coldoc_tasks', dir=tempdir)
+        infofile = os.path.join(mytempdir, 'infofile')
+    sock = sock or sock_
+    if sock is None:
+        if mytempdir is None:
+            mytempdir = tempfile.mkdtemp(prefix='coldoc_tasks', dir=tempdir)
+        sock = os.path.join(mytempdir, 'socket')
+    auth = auth or auth_ or os.urandom(8)
+    mytempdir = mytempdir or tempdir
+    assert isinstance(sock, (str, bytes, Path))
+    assert isinstance(auth, bytes)
+    return infofile, sock, auth, mytempdir
 
-def tasks_daemon_autostart(infofile, sock=None, auth=None,
+def tasks_daemon_autostart(infofile=None, sock=None, auth=None,
                            pythonpath=(),
                            cwd=None,
                            logfile = None,
@@ -681,7 +703,7 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
         opt = os.environ.get('COLDOC_TASKS_AUTOSTART_OPTIONS','').split(',')
     elif isinstance(opt,str):
         opt = opt.split(',')
-    if 'nocheck' not in opt:
+    if 'nocheck' not in opt and infofile:
         ok, sock_, auth_, pid_ = task_server_check(infofile)
         if ok:
             return pid_, infofile
@@ -691,7 +713,7 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
     if force is None:
         force = 'force' in opt
     if force and not ok:
-        if os.path.exists(infofile+'.lock'):
+        if isinstance(infofile,str)  and os.path.exists(infofile+'.lock'):
             logger.warning('Removing stale lock %r', (infofile+'.lock',))
             os.unlink(infofile+'.lock')
         if isinstance(sock_,str) and os.path.exists(sock_):
@@ -719,11 +741,9 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
         #
         logger.info('starting task server')
         #
-        sock = sock if sock is not None else sock_
-        if sock is None:
-            raise RuntimeError('The argument `sock` is not set, and no `infofile`')
-        auth = auth or os.urandom(8)
-        assert isinstance(auth, bytes)
+        infofile, sock, auth, tempdir = _fix_parameters(infofile, sock, auth, tempdir)
+        tasks_server_writeinfo(infofile, sock, auth)
+        #
         if use_multiprocessing:
             import multiprocessing
             # FIXME: this fails in some cases, since django is not reentrant
@@ -755,9 +775,8 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
             cmd = os.path.realpath(__file__)
             args = ['python3', cmd]
             if subcmd:
-                args += subcmd
+                args += subcmd + [infofile]
             else:
-                tasks_server_writeinfo(infofile, sock, auth)
                 args += ['start_with', infofile]
             env = dict(os.environ)
             env['COLDOC_TASKS_AUTOSTART_OPTIONS'] = 'nocheck,noautostart'
@@ -780,19 +799,20 @@ def tasks_daemon_autostart(infofile, sock=None, auth=None,
             proc = False
     return proc, infofile
 
+
 def tasks_daemon_django_autostart(settings, **kwargs):
     """ Check (using information from `settings` module) if there is a server running;
     if there is, return the PID,      if not, start it (as a subprocess), and return the process.
     For keyword arguments, see `tasks_daemon_autostart`.
       """
-    info = settings.COLDOC_TASKS_INFOFILE
-    sock = settings.COLDOC_TASKS_SOCKET
-    auth = getattr(settings, 'COLDOC_TASKS_PASSWORD', None)
-    logfile = getattr(settings, 'COLDOC_TASKS_LOGFILE', None)
+    kwargs['infofile'] = getattr(settings, 'COLDOC_TASKS_INFOFILE', None)
+    kwargs['sock']     = getattr(settings, 'COLDOC_TASKS_SOCKET', None)
+    kwargs['auth']     = getattr(settings, 'COLDOC_TASKS_PASSWORD', None)
+    kwargs['logfile']  = getattr(settings, 'COLDOC_TASKS_LOGFILE', None)
+    kwargs['tempdir']  = getattr(settings, 'COLDOC_TASKS_TEMPDIR', default_tempdir)
+    kwargs['pythonpath'] = getattr(settings, 'COLDOC_TASKS_PYTHONPATH', tuple())
     #
-    kwargs['auth'] = auth
-    kwargs['logfile'] = logfile
-    kwargs['subcmd'] = ['django_server_start']
+    kwargs['subcmd'] = ['django_server_start_with']
     proc, info = tasks_daemon_autostart(**kwargs)
     if proc:
         settings.COLDOC_TASKS_PROC = proc
@@ -845,15 +865,21 @@ def main(argv):
         import django
         django.setup()
         from django.conf import settings
-        info = settings.COLDOC_TASKS_INFOFILE
         #
-        if argv[0] == 'django_server_start':
-            auth = settings.COLDOC_TASKS_PASSWORD
-            sock = settings.COLDOC_TASKS_SOCKET
-            tempdir = getattr( settings, 'COLDOC_TMP_ROOT', default_tempdir)
-            return tasks_server_start(address=sock, authkey=auth, infofile=info,
-                                      with_django=os.environ.get('DJANGO_SETTINGS_MODULE'),
-                                      tempdir=tempdir)
+        if argv[0] == 'django_server_start_with':
+            if len(argv)<= 1:
+                print( __doc__)
+                return False
+            info = argv[1]
+        else:
+            info = getattr(settings, 'COLDOC_TASKS_INFOFILE', None)
+        if info is None:
+            logger.error('This command needs that `COLDOC_TASKS_INFOFILE` be defined in `settings`')
+            return False
+        if argv[0] in (  'django_server_start' , 'django_server_start_with' ):
+            address, authkey = tasks_server_readinfo(info)[:2]
+            return tasks_server_start(address=address, authkey=authkey, infofile= info)
+        #
         argv[0]  = argv[0][len('django_server_'):]
     else:
         if len(argv)<= 1:
