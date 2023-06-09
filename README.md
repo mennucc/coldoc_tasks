@@ -22,7 +22,6 @@ Code
 The code is open source,
 [it is available at GitHub.](https://github.com/mennucc/coldoc_tasks)
 
-
 The current version of the code is `0.1`.
 
 Authors
@@ -49,6 +48,13 @@ inside an Ubuntu environment, for Python 3.8 up to 3.11
 Usage
 =====
 
+Dependencies
+------------
+
+when used with its internal server, the package has no strict dependencies.
+The packages `lockfile` and `psutil`, if installed, will be used to enhance some parts.
+
+If you wish to use *Celery* servers, then you need to install the celery package.
 
 Starting the server
 -------------------
@@ -65,11 +71,14 @@ To start a celery server, you can use
 
     python3 coldoc_tasks/celery_tasks.py daemon etc/celeryconfig.py 
 
-where `etc/celeryconfig.py` is set to use the `redis` server in turn, that in
-Ubuntu/Debian machines can be installed by
+where `etc/celeryconfig.py` is set to use the `redis` server, in turn.
+In Ubuntu/Debian machines the redis server can be installed by
 
     sudo apt install redis
 
+moreover, you need the *celery* python package, that can be installed by
+
+    pip install 'celery[redis]'
 
 For Django projects, there is a provision for autostarting the server,
 read below.
