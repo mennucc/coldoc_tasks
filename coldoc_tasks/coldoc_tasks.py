@@ -807,7 +807,7 @@ def tasks_daemon_django_autostart(settings, **kwargs):
     kwargs['subcmd'] = ['django_server_start_with']
     proc, info = tasks_daemon_autostart(**kwargs)
     if proc:
-        settings.COLDOC_TASKS_PROC = proc
+        settings.COLDOC_TASKS_COLDOC_PROC = proc
         settings.COLDOC_TASKS_INFOFILE = info
     return proc, info
 
