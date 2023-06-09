@@ -5,6 +5,10 @@ __doc__ = """
 
       start Celery server
 
+  daemon celeryconfig.py
+
+      start Celery server as daemon
+
   shutdown celeryconfig.py
 
       shutdown Celery servers
