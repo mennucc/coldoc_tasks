@@ -166,7 +166,10 @@ class fork_class(fork_class_base):
         if self.use_fork_:
             self.__cmd = self.__celery_run_it.delay(cmd, k, v)
         else:
-            self.__ret = cmd(*k, **v)
+            try:
+                self.__ret = (0, cmd(*k, **v))
+            except Exception as E:
+                self.__ret = (1, E)
         self.already_run = True
     #
     def terminate(self):
@@ -179,12 +182,15 @@ class fork_class(fork_class_base):
             self.already_wait = True
             try:
                 with celery.result.allow_join_result():
-                    self.__ret = self.__cmd.get(timeout=timeout)
+                    r = self.__cmd.get(timeout=timeout)
+                    self.__ret = (0, r)
             except celery.exceptions.TaskRevokedError as E:
                 raise ColdocTasksProcessLookupError('Process %r terminated : %r' % ( self.__cmd_name, E) )
             except celery.exceptions.TimeoutError as E:
-                raise ColdocTasksTimeoutError('For cmd %r job %r ', self.__cmd, self.__proc)
-        return self.__ret
+                raise ColdocTasksTimeoutError('For cmd %r ', self.__cmd_name)
+        if self.__ret[0] :
+            raise self.__ret[1]
+        return self.__ret[1]
 
 def run_server(celeryconfig=None, with_django=None):
     " start Celery server "
