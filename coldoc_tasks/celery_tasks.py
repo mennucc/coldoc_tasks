@@ -253,12 +253,12 @@ def tasks_daemon_autostart(celeryconfig,
                            subcmd=None,
                            ):
     """ Check if there is a server running using `celeryconfig`;
-    if there is, return (PID, infofile),      if not, start it (as a subprocess), and return(`proc`, `infofile`)
+    if there is, return `True`,      if not, start it (as a subprocess), and return `proc`
     (where `proc` is either a `subprocess.Popen` or `multiprocessing.Process` instance),
    
     Arguments notes: 
        if `logfile` is `True`, will create a temporary files to store logs;
-       if `force` is True, and the server cannot be contacted, remove lock and socket;
+       (`force` is ignored);
        `pythonpath` may be a string, in the format of PYTHONPATH, or a list:
         it  will be added to sys.path.
        
