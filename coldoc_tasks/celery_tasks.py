@@ -5,6 +5,10 @@ __doc__ = """
 
       start Celery server
 
+  shutdown celeryconfig.py
+
+      shutdown Celery servers
+
   test celeryconfig.py
 
       test Celery server
@@ -386,6 +390,9 @@ def main(argv):
         else:
             assert False
         return True
+    elif  argv[0] in ('shutdown', 'stop_daemon') :
+        app = get_client(argv[1])
+        return app.control.shutdown()
     else:
         print(__doc__)
         return False
