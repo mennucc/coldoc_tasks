@@ -16,7 +16,10 @@ __doc__ = """
 
 
 import os, sys, io, importlib.util, functools, inspect
+import tempfile, subprocess, threading, time
+from pathlib import Path
 
+default_tempdir = tempfile.gettempdir()
 
 import logging
 logger = logging.getLogger(__name__)
@@ -31,6 +34,7 @@ if __name__ == '__main__':
 
 
 from coldoc_tasks.simple_tasks import fork_class_base
+from coldoc_tasks.task_utils import _normalize_pythonpath
 from coldoc_tasks.exceptions import *
 
 ####################### celery machinery
@@ -210,6 +214,116 @@ def run_server(celeryconfig=None, with_django=None):
     #
     worker = app.Worker()
     return worker.start()
+
+def server_wait(celeryconfig, timeout = 2.0):
+    " try pinging, up to timeout"
+    ok = False
+    for j in range(int(float(timeout) * 20.)):
+        ok = ping(celeryconfig)
+        if ok: break
+        time.sleep(0.05)
+    return ok
+
+
+
+def tasks_daemon_autostart(celeryconfig,
+                           pythonpath=(),
+                           cwd=None,
+                           logfile = None,
+                           opt = None,
+                           tempdir = default_tempdir,
+                           timeout = 2.0,
+                           force = False,
+                           # this option is used to wrap this function for Django...
+                           subcmd=None,
+                           ):
+    """ Check if there is a server running using `celeryconfig`;
+    if there is, return (PID, infofile),      if not, start it (as a subprocess), and return(`proc`, `infofile`)
+    (where `proc` is either a `subprocess.Popen` or `multiprocessing.Process` instance),
+   
+    Arguments notes: 
+       if `logfile` is `True`, will create a temporary files to store logs;
+       if `force` is True, and the server cannot be contacted, remove lock and socket;
+       `pythonpath` may be a string, in the format of PYTHONPATH, or a list:
+        it  will be added to sys.path.
+       
+    The env variable 'COLDOC_TASKS_AUTOSTART_OPTIONS' may be used to tune this functions,
+    it accepts a comma-separated list of keywords from `nocheck`, `noautostart`, `force` .
+    The argument `opt` overrides that env variable. The argument `force`, if set, ignores the previous two.
+      """
+    #
+    #
+    ok = False
+    if opt is None:
+        opt = os.environ.get('COLDOC_TASKS_AUTOSTART_OPTIONS','').split(',')
+    elif isinstance(opt,str):
+        opt = opt.split(',')
+    if 'nocheck' not in opt:
+        ok = celery_server_check(celeryconfig)
+        logger.debug('A daemon is alread running')
+        if ok:
+            return True
+    #
+    pythonpath = _normalize_pythonpath(pythonpath)
+    # this does not work OK
+    use_multiprocessing=False
+    #
+    proc = None
+    if not ok and 'noautostart' not in opt:
+        #
+        logger.info('starting Celery task server')
+        #
+        if use_multiprocessing:
+            import multiprocessing
+            # FIXME: this fails in some cases, since django is not reentrant
+            # TODO: support pythontpath, cwd, subcmd for django, tempdir
+            #
+            # FIXME this may not work as I would like
+            flag = os.environ.get('COLDOC_TASKS_AUTOSTART_OPTIONS')
+            os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] =  'nocheck,noautostart'
+            #
+            proc = multiprocessing.Process(target=run_server,
+                                           args=(celeryconfig,))
+            if flag is None:
+                del os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS']
+            else:
+                os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] =  flag
+            proc.start()
+        else:
+            if logfile is True:
+                logfile_ = tempfile.NamedTemporaryFile(dir=tempdir,
+                                            delete=False,
+                                            prefix='coldoc_tasks_', suffix='.log')
+            elif isinstance(logfile, (str,bytes,Path)):
+                logfile_ = open(logfile, 'a')
+            else:
+                if logfile is not None:
+                    logger.error('parameter `logfile` is of unsupported type %r', type(logfile))
+                logfile_ = open(os.devnull, 'a')
+            #
+            cmd = os.path.realpath(__file__)
+            args = ['python3', cmd]
+            args += ['start', celeryconfig]
+            env = dict(os.environ)
+            env['COLDOC_TASKS_AUTOSTART_OPTIONS'] = 'nocheck,noautostart'
+            if pythonpath:
+                env['PYTHONPATH'] = os.pathsep.join(pythonpath)
+            if tempdir:
+                for j in ('TMPDIR', 'TEMP', 'TMP'):
+                    env[j] = str(tempdir)
+            proc = subprocess.Popen(args, stdin=open(os.devnull), stdout=logfile_,
+                                    env = env,
+                                    stderr=subprocess.STDOUT, text=True,  cwd=cwd)
+        # check it
+        ok = server_wait(celeryconfig,timeout)
+        if not ok:
+            logger.critical('Cannot start task process, see %r', getattr(logfile_,'name', logfile_))
+            #if not use_multiprocessing:
+            #    jt = threading.Thread(target=proc.wait)
+            #    jt.run()
+            proc = False
+    return proc
+
 
 ############### testing
 
