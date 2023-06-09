@@ -941,4 +941,4 @@ if __name__ == '__main__':
     except:
         ret = False
         logger.exception("While %r", argv)
-    sys.exit(1 if ret else 0)
+    sys.exit(0 if ret else 1)

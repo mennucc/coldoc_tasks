@@ -259,5 +259,5 @@ if __name__ == '__main__':
     except:
         logger.exception("While %r", argv)
         ret = False
-    sys.exit(1 if ret else 0)
+    sys.exit(0 if ret else 1)
 
