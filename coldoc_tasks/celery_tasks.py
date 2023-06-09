@@ -62,18 +62,25 @@ def import_module_from_string(name: str, source: str):
     globals()[name] = module
     return module
 
+def get_client(celeryconfig_):
+    assert celery is not None
+    if isinstance(celeryconfig_, io.IOBase):
+        celeryconfig_.seek(0)
+        celeryconfig_ = compile(celeryconfig_.read(), 'celeryconfig.py', 'exec')
+        return _get_client(celeryconfig_)
+    elif isinstance(celeryconfig_,str):
+        if os.path.isfile(celeryconfig_):
+            return _get_client(celeryconfig_, mtime=os.path.getmtime(celeryconfig_))
+    return _get_client(celeryconfig_)
 
 @functools.lru_cache(100)
-def get_client(celeryconfig_):
+def _get_client(celeryconfig_, mtime = None):
     """ get celery_app from celeryconfig; `celeryconfig` may be:
       `str` that is a filename to be loaded , or 
       `code` already compiled, or
       an io object (such as open file or `StringIO), to read code from.
     """
-    if isinstance(celeryconfig_, io.IOBase):
-        celeryconfig_.seek(0)
-        celeryconfig = import_module_from_string('celeryconfig', celeryconfig_.read())
-    elif isinstance(celeryconfig_,str):
+    if isinstance(celeryconfig_,str):
         if os.path.isfile(celeryconfig_):
             celeryconfig = import_module_from_string('celeryconfig', open(celeryconfig_).read())
             ## this sucks
