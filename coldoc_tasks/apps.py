@@ -28,8 +28,8 @@ def autostart(sett_):
                                                                     logfile=logfile, force=True)
             if not proc:
                 logger.error('Coldoc Tasks app, failed starting Celery daemon')
-            else:
-                sett_.COLDOC_TASKS_AUTOSTART_PROC = proc
+            elif proc is not True:
+                sett_.COLDOC_TASKS_AUTOSTART_CELERY_PROC = proc
         elif j == 'coldoc':
             import coldoc_tasks.coldoc_tasks
             logger.info('Coldoc Tasks: will autostart the daemon')
@@ -38,7 +38,7 @@ def autostart(sett_):
             if not proc:
                 logger.error('Coldoc Tasks app, failed starting of daemon')
             else:
-                sett_.COLDOC_TASKS_AUTOSTART_PROC = proc
+                sett_.COLDOC_TASKS_AUTOSTART_COLDOC_PROC = proc
                 sett_.COLDOC_TASKS_AUTOSTART_INFOFILE = info
         else:
             logger.error('COLDOC_TASKS_AUTOSTART %r contains an unknown word %r', autostart, j)
