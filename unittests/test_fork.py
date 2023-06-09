@@ -152,9 +152,8 @@ class TestForkCelery(Base,unittest.TestCase):
         assert celery is not None
         cls.logger = logging.getLogger('celery_tasks')
         cls.logfile = tempfile.NamedTemporaryFile(delete=False)
-        celeryconfig = os.path.join(sourcedir,'etc','celeryconfig.py')
-        print(celeryconfig)
-        cls.proc = coldoc_tasks.celery_tasks.tasks_daemon_autostart(celeryconfig,
+        cls.celeryconfig = os.path.join(sourcedir,'etc','celeryconfig.py')
+        cls.proc = coldoc_tasks.celery_tasks.tasks_daemon_autostart(cls.celeryconfig,
                                                                     logfile=cls.logfile.name,
                                                                     pythonpath=(sourcedir,testdir))
         if not cls.proc:
@@ -162,11 +161,13 @@ class TestForkCelery(Base,unittest.TestCase):
                                     open(cls.logfile.name).read() + '\n' +  ('^' * 70))
                 raise Exception("could not start Celery server")
         cls.fork_class =  functools.partial(coldoc_tasks.celery_tasks.fork_class,
-                                            celeryconfig=celeryconfig)
+                                            celeryconfig=cls.celeryconfig)
 
     @classmethod
     def tearDownClass(cls):
         # remove
+        app = coldoc_tasks.celery_tasks.get_client(cls.celeryconfig)
+        app.control.shutdown()
         if cls.proc is not True and hasattr(cls.proc,'pid'):
             os.kill(cls.proc.pid, signal.SIGTERM)
         os.unlink(cls.logfile.name)
