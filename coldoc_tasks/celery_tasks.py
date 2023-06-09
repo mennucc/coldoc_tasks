@@ -346,8 +346,7 @@ def main(argv):
         return False
     #
     if 'status' == argv[0] :
-        celery_app = get_client(argv[1])
-        for k,v in status(celery_app).items():
+        for k,v in status(argv[1]).items():
             print(' --  ',k)
             print(v)
         return True
