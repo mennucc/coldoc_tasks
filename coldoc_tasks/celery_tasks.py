@@ -353,7 +353,9 @@ def main(argv):
         return True
     #
     if 'ping' == argv[0] :
-        return celery_server_check(argv[1])
+        ret = celery_server_check(argv[1])
+        print('OK' if ret else 'FAILED')
+        return ret
     #
     elif 'test' == argv[0]:
         from coldoc_tasks.task_utils import test_fork
