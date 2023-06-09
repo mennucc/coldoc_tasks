@@ -87,6 +87,7 @@ if __name__ == '__main__':
     
 
 from coldoc_tasks.simple_tasks import fork_class_base
+from coldoc_tasks.task_utils import _normalize_pythonpath
 from coldoc_tasks.exceptions import *
 
 
@@ -720,19 +721,7 @@ def tasks_daemon_autostart(infofile=None, sock=None, auth=None,
             logger.warning('Removing stale socket %r', (sock_,))
             os.unlink(sock_)
     #
-    if isinstance(pythonpath, Path):
-        pythonpath = [pythonpath]
-    elif isinstance(pythonpath, str):
-        pythonpath = pythonpath.split(os.pathsep)
-    elif isinstance(pythonpath, bytes):
-        pythonpath = pythonpath.split(os.pathsep.encode())
-    assert isinstance(pythonpath, (list, tuple))
-    # convert Paths to str
-    pythonpath = list(map(lambda x: str(x) if isinstance(x,Path) else x, pythonpath))
-    # convert bytes to str
-    pythonpath = list(map(lambda x: x.decode('utf8','replace') if isinstance(x,bytes) else x, pythonpath))
-    if not all(isinstance(x,str) for  x in pythonpath):
-        logger.error('Weird pythonpath %r', pythonpath)
+    pythonpath = _normalize_pythonpath(pythonpath)
     # this does not work OK
     use_multiprocessing=False
     #

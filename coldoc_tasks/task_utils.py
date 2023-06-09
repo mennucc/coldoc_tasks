@@ -1,6 +1,6 @@
 import sys, os, time, pickle, functools
 from os.path import join as osjoin
-
+from pathlib import Path
 
 import logging
 logger = logging.getLogger(__name__)
@@ -55,6 +55,19 @@ def choose_best_fork_class(infofile=None, celeryconfig=None,  preferences=('cele
 
 ######################################
 
+def _normalize_pythonpath(pythonpath):
+    if isinstance(pythonpath, Path):
+        pythonpath = [pythonpath]
+    elif isinstance(pythonpath, str):
+        pythonpath = pythonpath.split(os.pathsep)
+    elif isinstance(pythonpath, bytes):
+        pythonpath = pythonpath.split(os.pathsep.encode())
+    assert isinstance(pythonpath, (list, tuple))
+    # convert Paths to str
+    pythonpath = list(map(lambda x: str(x) if isinstance(x,Path) else x, pythonpath))
+    # convert bytes to str
+    pythonpath = list(map(lambda x: x.decode('utf8','replace') if isinstance(x,bytes) else x, pythonpath))
+    return pythonpath
 
 
 def __fork_reentrat_test(fork_class, depth = 3,  sleep=0.1):
