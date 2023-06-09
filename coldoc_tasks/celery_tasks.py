@@ -367,6 +367,19 @@ def main(argv):
         return ret == 0
     elif  'start' == argv[0] :
         return run_server(celeryconfig=argv[1])
+    elif  'daemon' == argv[0] :
+        logger.setLevel(logging.DEBUG)
+        logfile = tempfile.NamedTemporaryFile(delete=False)
+        sourcedir = os.path.dirname(os.path.dirname(__file__))
+        celeryconfig = os.path.join(sourcedir,'etc','celeryconfig.py')
+        proc = tasks_daemon_autostart(celeryconfig,
+                                                                logfile=logfile.name,
+                                                                pythonpath=(sourcedir,))
+        if not proc:
+                logger.critical("could not start server! log follows \n" + ('v' * 70) +\
+                                open(logfile.name).read() + '\n' +  ('^' * 70))
+                return False
+        return True
     else:
         print(__doc__)
         return False
