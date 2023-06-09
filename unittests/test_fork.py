@@ -169,7 +169,10 @@ class TestForkCelery(Base,unittest.TestCase):
         app = coldoc_tasks.celery_tasks.get_client(cls.celeryconfig)
         app.control.shutdown()
         if cls.proc is not True and hasattr(cls.proc,'pid'):
-            os.kill(cls.proc.pid, signal.SIGTERM)
+            try:
+                os.kill(cls.proc.pid, signal.SIGTERM)
+            except Exception as E:
+                logger.warning('Cannot kill %r, %r', cls.proc.pid , E)
         os.unlink(cls.logfile.name)
 
 
