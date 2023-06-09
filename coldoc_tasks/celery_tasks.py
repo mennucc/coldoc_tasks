@@ -379,6 +379,12 @@ def main(argv):
                 logger.critical("could not start server! log follows \n" + ('v' * 70) +\
                                 open(logfile.name).read() + '\n' +  ('^' * 70))
                 return False
+        elif proc is True:
+            print('already started')
+        elif getattr(proc,'pid'):
+            print('started as %r', proc.pid)
+        else:
+            assert False
         return True
     else:
         print(__doc__)
