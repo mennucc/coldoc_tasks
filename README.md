@@ -53,6 +53,23 @@ Usage
 Starting the server
 -------------------
 
+The command to start the server has synopsis
+
+    python3 coldoc_tasks/coldoc_tasks.py start infofile socket [authkey]
+
+for example
+
+    python3 coldoc_tasks/coldoc_tasks.py start /tmp/info1 /tmp/sock1
+
+To start a celery server, you can use
+
+    python3 coldoc_tasks/celery_tasks.py daemon etc/celeryconfig.py 
+
+where `etc/celeryconfig.py` is set to use the `redis` server in turn, that in
+Ubuntu/Debian machines can be installed by
+
+    sudo apt install redis
+
 
 For Django projects, there is a provision for autostarting the server,
 read below.
@@ -62,19 +79,19 @@ Scheduling tasks
 
 A task is scheduled using the
 
-    `fork_class`
+    fork_class
 
 you need an instance,
 
-    `f=fork_class()`
+    f=fork_class()
 
 then you schedule the the command using
 
-    `f.run(cmd, ....)`
+    f.run(cmd, ....)
 
 with the function in `cmd` and all its arguments following; then you call
 
-    `ret=f.wait(timeout=None)`
+    ret=f.wait(timeout=None)
 
 to wait for the result; if the *cmd* raised an exception, `ret=f.wait()` will raise the same exception;
 if `timeout` occours, `ColdocTasksTimeoutError` is raised; if the subprocess has disappeared,
@@ -93,19 +110,20 @@ There are four implementations of fork classes:
 
 At any time,
 
-    name,fork_class = coldoc_tasks.task_utils.choose_best_fork_class(infofile=None, celeryconfig=None,  preferences=('celery','coldoc','simple'))
+    name,fork_class = coldoc_tasks.task_utils.choose_best_fork_class(infofile=None, celeryconfig=None, preferences=('celery','coldoc','simple'))
 
-will return the first working class in the list `preferences` (or the *nofork* class, if none are found).
+will return the first working class in the list `preferences` (or the *nofork* class, if none are found);
+where `infofile` is the path to the info file (for the internal server), and
+`celeryconfig` is the path to the Celery `celeryconfig.py` file (that was `etc/celeryconfig.py`  in the above example)
 
 Further commands
 ----------------
 
 The method
 
-    `f.terminate()`
+    f.terminate()
 
 will terminate a running job (this is not available in the `nofork` class).
-
 
 Each `fork_class` accepts the parameter `use_fork=False` ; this is useful to simplify
 the code flow, when forking is not needed.
@@ -219,4 +237,8 @@ To start a server, set
     COLDOC_TASKS_AUTOSTART="celery"
 
 Note that the *celeryconfig* is never overwritten.
+
+You can also autostart both kind of server, using
+
+    COLDOC_TASKS_AUTOSTART="celery,coldoc"
 
