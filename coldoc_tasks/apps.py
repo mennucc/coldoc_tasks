@@ -18,7 +18,10 @@ def autostart(sett_):
     pythonpath = getattr(sett_, 'COLDOC_TASKS_PYTHONPATH', tuple())
     celeryconfig = getattr(sett_, 'COLDOC_TASKS_CELERYCONFIG', None)
     for j in autostart:
-        if j == 'celery' and celeryconfig:
+        if j == 'celery':
+            if celeryconfig is None:
+                logger.error('Coldoc Tasks app, cannot start Celery daemon, COLDOC_TASKS_CELERYCONFIG is not defined')
+                continue
             import coldoc_tasks.celery_tasks
             logger.info('Coldoc Tasks: will autostart the Celery daemon')
             proc = coldoc_tasks.celery_tasks.tasks_daemon_autostart(celeryconfig, pythonpath=pythonpath,
