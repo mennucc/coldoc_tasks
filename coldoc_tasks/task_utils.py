@@ -1,4 +1,4 @@
-import sys, os, time, pickle, functools
+import sys, os, time, pickle, functools, time
 from os.path import join as osjoin
 from pathlib import Path
 
@@ -15,7 +15,7 @@ except ImportError:
 
 all_fork_classes = ('celery','coldoc','simple','nofork')
 
-def choose_best_fork_class(infofile=None, celeryconfig=None,
+def _choose_best_fork_class(infofile=None, celeryconfig=None,
                            preferences=('celery','coldoc','simple')):
     """ returns the first working `fork_class` in the list `preferences` """
     #
@@ -53,6 +53,60 @@ def choose_best_fork_class(infofile=None, celeryconfig=None,
             return coldoc_tasks.simple_tasks.nofork_class
     return coldoc_tasks.simple_tasks.nofork_class
 
+
+class choose_best_fork_class(object):
+    def __init__(self, infofile=None, celeryconfig=None,
+                 preferences=('celery','coldoc','simple'),
+                 refresh_time_interval = 120,
+                 callback = None
+                 ):
+        """
+        Returns a callable instance,         when called, it
+        returns the first working `fork_class` in the list `preferences`.
+        
+        Every `refresh_time_interval` seconds, the choice is reverified  by pinging servers;
+        `callback(fork_class)` is called when a choice is made.
+        """
+        self.infofile = infofile
+        self.infofile_mtime = None
+        if isinstance(infofile, (str,bytes,Path)) and os.path.isfile(infofile):
+            self.infofile_mtime = os.path.getmtime(infofile)
+        #
+        self.celeryconfig = celeryconfig
+        self.celeryconfig_mtime = None
+        if isinstance(celeryconfig, (str,bytes,Path)) and os.path.isfile(celeryconfig):
+            self.celeryconfig_mtime = os.path.getmtime(celeryconfig)
+        #
+        self.preferences = preferences
+        self.refresh_time_interval = refresh_time_interval
+        self.callback = callback
+        #
+        self.last_fork_class = None
+        self.fork_type = 'undecided'
+        self.time_choice = 0
+    #
+    def __call__(self, *args, **kwargs):
+        t = time.time()
+        refresh = self.last_fork_class is None or \
+            ( t > self.time_choice + self.refresh_time_interval)
+        if not refresh and self.infofile_mtime and self.infofile_mtime != os.path.getmtime(self.infofile):
+            self.infofile_mtime = os.path.getmtime(self.infofile)
+            logger.info('infofile was changed: %r',self.infofile)
+            refresh = True
+        if not refresh and self.celeryconfig_mtime and self.celeryconfig_mtime != os.path.getmtime(self.celeryconfig):
+            self.celeryconfig_mtime = os.path.getmtime(self.celeryconfig)
+            logger.info('celeryconfig was changed: %r',self.celeryconfig)
+            refresh = True
+        #
+        if refresh:
+            logger.info('Refreshing choice of `fork_class`')
+            self.time_choice = t
+            self.last_fork_class = _choose_best_fork_class(self.infofile, self.celeryconfig, self.preferences)
+            self.fork_type = self.last_fork_class.fork_type
+            assert self.fork_type in all_fork_classes
+            if self.callback:
+                self.callback(self.last_fork_class)
+        return self.last_fork_class(*args, **kwargs)
 
 
 ######################################
