@@ -253,3 +253,12 @@ You can also autostart both kind of server, using
 
     COLDOC_TASKS_AUTOSTART="celery,coldoc"
 
+Developing
+==========
+
+If you wish to help in developing, please
+
+  pip -r requirements-test.txt
+  git config --local core.hooksPath .githooks/
+
+so that each commit is pre tested.
