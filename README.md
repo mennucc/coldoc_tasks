@@ -121,7 +121,7 @@ The above name can be retrieved also from `fork_class.fork_type`.
 
 At any time,
 
-    name,fork_class = coldoc_tasks.task_utils.choose_best_fork_class(infofile=None, celeryconfig=None, preferences=('celery','coldoc','simple'))
+    fork_class = coldoc_tasks.task_utils.choose_best_fork_class(infofile=None, celeryconfig=None, preferences=('celery','coldoc','simple'))
 
 will return the first working class in the list `preferences` (or the *nofork* class, if none are found);
 where `infofile` is the path to the info file (for the internal server), and

@@ -15,9 +15,9 @@ except ImportError:
 
 all_fork_classes = ('celery','coldoc','simple','nofork')
 
-def choose_best_fork_class(infofile=None, celeryconfig=None,  preferences=('celery','coldoc','simple')):
-    """ returns the first working `fork_class` in the list `preferences` ;
-     returns a pair (name,fork_class) """
+def choose_best_fork_class(infofile=None, celeryconfig=None,
+                           preferences=('celery','coldoc','simple')):
+    """ returns the first working `fork_class` in the list `preferences` """
     #
     import coldoc_tasks.simple_tasks
     #
@@ -35,7 +35,8 @@ def choose_best_fork_class(infofile=None, celeryconfig=None,  preferences=('cele
                 logger.critical('Celery backend cannot be contacted')
             else:
                 fork_class = functools.partial(coldoc_tasks.celery_tasks.fork_class, celeryconfig=celeryconfig)
-                return 'celery', fork_class
+                fork_class.fork_type = coldoc_tasks.celery_tasks.fork_class.fork_type
+                return fork_class
         #
         if infofile  and j == 'coldoc':
             import coldoc_tasks.coldoc_tasks
@@ -44,12 +45,13 @@ def choose_best_fork_class(infofile=None, celeryconfig=None,  preferences=('cele
                 logger.critical('Coldoc Tasks backend cannot be contacted')
             else:
                 fork_class = functools.partial(coldoc_tasks.coldoc_tasks.fork_class,address=tasks_sock, authkey=tasks_auth)
-                return 'coldoc', fork_class
+                fork_class.fork_type = coldoc_tasks.coldoc_tasks.fork_class.fork_type
+                return fork_class
         if j == 'simple':
-            return 'simple', coldoc_tasks.simple_tasks.fork_class
+            return coldoc_tasks.simple_tasks.fork_class
         if j == 'nofork':
-            return 'simple', coldoc_tasks.simple_tasks.nofork_class
-    return 'nofork',coldoc_tasks.simple_tasks.nofork_class
+            return coldoc_tasks.simple_tasks.nofork_class
+    return coldoc_tasks.simple_tasks.nofork_class
 
 
 
