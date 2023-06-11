@@ -180,7 +180,8 @@ Integration with Django is thru these variables in the _setting.py_ file
   if you use Celery, you must tell where the `celeryconfig.py` file is.
 
 - `COLDOC_TASKS_AUTOSTART`  
-  flag to agree to server autostarting; note that this is not enough,  read below.
+  comma separated list of servers to autostart, choosing between
+  `celery` and `coldoc`; note that this is not enough,  read below.
 
 - `COLDOC_TASKS_LOGFILE`  
   optional path for a logfile for the autostarted server.
@@ -203,20 +204,31 @@ autostarting
 
 You need to flag  any code path where the server should be autostarted,
 using an environment variable.
-This is to avoid unnnecessary (and recursive) server autostarting,
-a special flag is used.
+This is to avoid unnnecessary (and recursive) server autostarting.
 
 To this end, you should add
 
-    os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] = 'autostart'
+    os.environ['COLDOC_TASKS_AUTOSTART'] = 'all'
+
 in certain files, such as  `wsgi.py`.
 
 In `manage.py` you may add (in the `main` function)
 
     if (len(sys.argv)>1 and sys.argv[1] in ('runserver',)):
-      os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] = 'coldoc'
+      os.environ['COLDOC_TASKS_AUTOSTART'] = 'all'
 
 so that the *task server* is only started when `manage.py` is starting the Django portal.
+
+Instead of `all`, you can specify a restricted set of servers, with the same syntax as the
+setting `COLDOC_TASKS_AUTOSTART`.
+
+A server will be started only if
+
+- it is in the list specified in `settings.COLDOC_TASKS_AUTOSTART` , and
+
+- it is in the list specified in the env variable `COLDOC_TASKS_AUTOSTART` , and
+
+- it cannot be pinged.
 
 examples
 --------

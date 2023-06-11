@@ -8,17 +8,18 @@ from django.apps import AppConfig
 from django.conf import settings
 
 def autostart(sett_):
-    opt = os.environ.get('COLDOC_TASKS_AUTOSTART_OPTIONS','').split(',')
+    opt = os.environ.get('COLDOC_TASKS_AUTOSTART','').split(',')
+    if 'all' in opt:
+        from coldoc_tasks.task_utils import all_fork_classes
+        opt = all_fork_classes
     # safeguard against unwanted (sometimes recursive) activation
-    if 'autostart' not in opt:
-        return
     autostart = getattr(sett_, 'COLDOC_TASKS_AUTOSTART','')
     autostart=autostart.split(',')
     generic_logfile = getattr(sett_, 'COLDOC_TASKS_LOGFILE', None)
     pythonpath = getattr(sett_, 'COLDOC_TASKS_PYTHONPATH', tuple())
     celeryconfig = getattr(sett_, 'COLDOC_TASKS_CELERYCONFIG', None)
     for j in autostart:
-        if j == 'celery':
+        if j == 'celery' and j in opt:
             logfile = getattr(sett_, 'COLDOC_TASKS_CELERY_LOGFILE', generic_logfile)
             if celeryconfig is None:
                 logger.error('Coldoc Tasks app, cannot start Celery daemon, COLDOC_TASKS_CELERYCONFIG is not defined')
@@ -31,7 +32,7 @@ def autostart(sett_):
                 logger.error('Coldoc Tasks app, failed starting Celery daemon')
             elif proc is not True:
                 sett_.COLDOC_TASKS_AUTOSTART_CELERY_PROC = proc
-        elif j == 'coldoc':
+        elif j == 'coldoc'  and j in opt:
             logfile = getattr(sett_, 'COLDOC_TASKS_COLDOC_LOGFILE', generic_logfile)
             import coldoc_tasks.coldoc_tasks
             logger.info('Coldoc Tasks: will autostart the daemon')
