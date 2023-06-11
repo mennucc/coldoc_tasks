@@ -185,6 +185,12 @@ Integration with Django is thru these variables in the _setting.py_ file
 - `COLDOC_TASKS_LOGFILE`  
   optional path for a logfile for the autostarted server.
 
+- `COLDOC_TASKS_CELERY_LOGFILE`  
+  optional path for a logfile for the autostarted Celery server.
+
+- `COLDOC_TASKS_COLDOC_LOGFILE`  
+  optional path for a logfile for the autostarted coldoc task server.
+
 - `COLDOC_TASKS_PYTHONPATH`  
   Store here the base path where your django code resides; usually it is ennough to set it to  
   `COLDOC_TASKS_PYTHONPATH = BASE_DIR`  

@@ -14,11 +14,12 @@ def autostart(sett_):
         return
     autostart = getattr(sett_, 'COLDOC_TASKS_AUTOSTART','')
     autostart=autostart.split(',')
-    logfile = getattr(sett_, 'COLDOC_TASKS_LOGFILE', None)
+    generic_logfile = getattr(sett_, 'COLDOC_TASKS_LOGFILE', None)
     pythonpath = getattr(sett_, 'COLDOC_TASKS_PYTHONPATH', tuple())
     celeryconfig = getattr(sett_, 'COLDOC_TASKS_CELERYCONFIG', None)
     for j in autostart:
         if j == 'celery':
+            logfile = getattr(sett_, 'COLDOC_TASKS_CELERY_LOGFILE', generic_logfile)
             if celeryconfig is None:
                 logger.error('Coldoc Tasks app, cannot start Celery daemon, COLDOC_TASKS_CELERYCONFIG is not defined')
                 continue
@@ -31,6 +32,7 @@ def autostart(sett_):
             elif proc is not True:
                 sett_.COLDOC_TASKS_AUTOSTART_CELERY_PROC = proc
         elif j == 'coldoc':
+            logfile = getattr(sett_, 'COLDOC_TASKS_COLDOC_LOGFILE', generic_logfile)
             import coldoc_tasks.coldoc_tasks
             logger.info('Coldoc Tasks: will autostart the daemon')
             proc, info = coldoc_tasks.coldoc_tasks.tasks_daemon_django_autostart(settings, pythonpath=pythonpath,
