@@ -117,6 +117,8 @@ There are four implementations of fork classes:
 - `simple` uses `os.fork`
 - `nofork` does not fork
 
+The above name can be retrieved also from `fork_class.fork_type`.
+
 At any time,
 
     name,fork_class = coldoc_tasks.task_utils.choose_best_fork_class(infofile=None, celeryconfig=None, preferences=('celery','coldoc','simple'))

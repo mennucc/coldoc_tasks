@@ -240,6 +240,7 @@ def join(id_, manager):
 
 class fork_class(fork_class_base):
     "class that runs a job in a subprocess, and returns results or raises exception"
+    fork_type = 'coldoc'
     def __init__(self, address, authkey, use_fork = True):
         super().__init__(use_fork = use_fork )
         self.__cmd_id = None
