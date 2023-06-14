@@ -28,6 +28,7 @@ __doc__ = """
 
      as `django_start` , but forks a separate process
 
+  django_start_from infofile
   start_from infofile
   
      read the information from the infofile and start it
@@ -648,6 +649,10 @@ def _read_django_settings(kwargs, settings):
     kwargs['pythonpath'] = getattr(settings, 'COLDOC_TASKS_PYTHONPATH', tuple())
     kwargs['with_django'] = True
 
+def tasks_django_server_start(settings, **kwargs):
+    _read_django_settings(kwargs, settings)
+    return tasks_server_start(**kwargs)
+
 
 def task_server_check(info):
     """ accepts the infofile
@@ -888,9 +893,11 @@ def main(argv):
         if info is None:
             logger.error('This command needs that `COLDOC_TASKS_INFOFILE` be defined in `settings`')
             return False
-        if argv[0] in (  'django_start' , 'django_start_with' ):
+        if argv[0] ==  'django_start_with':
             address, authkey = tasks_server_readinfo(info)[:2]
-            return tasks_server_start(address=address, authkey=authkey, infofile= info)
+            return tasks_server_start(address=address, authkey=authkey, infofile= info, with_django=True)
+        if argv[0] ==  'django_start':
+            return tasks_django_server_start(settings, infofile= info)
         #
         argv[0]  = argv[0][len('django_'):]
     else:
