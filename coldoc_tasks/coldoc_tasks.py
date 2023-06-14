@@ -629,6 +629,14 @@ def tasks_server_start(address, authkey, infofile, with_django=None, tempdir=def
         return __tasks_server_start_nolock(address, authkey, infofile, with_django, tempdir)
 
 
+def _read_django_settings(kwargs, settings):
+    kwargs['infofile'] = getattr(settings, 'COLDOC_TASKS_INFOFILE', None)
+    kwargs['address']     = getattr(settings, 'COLDOC_TASKS_SOCKET', None)
+    kwargs['authkey']     = getattr(settings, 'COLDOC_TASKS_PASSWORD', None)
+    kwargs['logfile']  = getattr(settings, 'COLDOC_TASKS_LOGFILE', None)
+    kwargs['tempdir']  = getattr(settings, 'COLDOC_TASKS_TEMPDIR', default_tempdir)
+    kwargs['pythonpath'] = getattr(settings, 'COLDOC_TASKS_PYTHONPATH', tuple())
+    kwargs['with_django'] = True
 def task_server_check(info):
     """ accepts the infofile
     returns  `status, sock, auth, pid` , where `status` is a boolean"""
@@ -672,7 +680,7 @@ def _fix_parameters(infofile=None, sock=None, auth=None,
     assert isinstance(auth, bytes)
     return infofile, sock, auth, mytempdir
 
-def tasks_daemon_autostart(infofile=None, sock=None, auth=None,
+def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
                            pythonpath=(),
                            cwd=None,
                            logfile = None,
@@ -688,8 +696,8 @@ def tasks_daemon_autostart(infofile=None, sock=None, auth=None,
     (where `proc` is either a `subprocess.Popen` or `multiprocessing.Process` instance),
    
     Arguments notes: 
-        `sock` is the socket (if `None`, it will be read from `infofile`, that must exist);
-       if `auth` is `None`, generate a random one;
+        `address` is the socket (if `None`, it will be read from `infofile`, that must exist);
+       if `authkey` is `None`, generate a random one;
        if `logfile` is `True`, will create a temporary files to store logs;
        if `force` is True, and the server cannot be contacted, remove lock and socket;
        `pythonpath` may be a string, in the format of PYTHONPATH, or a list:
@@ -732,8 +740,8 @@ def tasks_daemon_autostart(infofile=None, sock=None, auth=None,
         #
         logger.info('starting task server')
         #
-        infofile, sock, auth, tempdir = _fix_parameters(infofile, sock, auth, tempdir)
-        tasks_server_writeinfo(infofile, sock, auth)
+        infofile, address, authkey, tempdir = _fix_parameters(infofile, address, authkey, tempdir)
+        tasks_server_writeinfo(infofile, address, authkey)
         #
         if use_multiprocessing:
             import multiprocessing
@@ -745,7 +753,7 @@ def tasks_daemon_autostart(infofile=None, sock=None, auth=None,
             os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] =  'nocheck,noautostart'
             #
             proc = multiprocessing.Process(target=tasks_server_start,
-                                           args=(sock, auth, infofile))
+                                           args=(address, authkey, infofile))
             if flag is None:
                 del os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS']
             else:
@@ -781,9 +789,9 @@ def tasks_daemon_autostart(infofile=None, sock=None, auth=None,
                                     env = env,
                                     stderr=subprocess.STDOUT, text=True,  cwd=cwd)
         # check it
-        ok = server_wait(sock, auth,timeout)
+        ok = server_wait(address, authkey,timeout)
         if ok:
-            _mychmod(sock)
+            _mychmod(address)
         #
         if not ok:
             logger.critical('Cannot start task process, see %r', getattr(logfile_,'name', logfile_))
@@ -799,12 +807,7 @@ def tasks_daemon_django_autostart(settings, **kwargs):
     if there is, return the PID,      if not, start it (as a subprocess), and return the process.
     For keyword arguments, see `tasks_daemon_autostart`.
       """
-    kwargs['infofile'] = getattr(settings, 'COLDOC_TASKS_INFOFILE', None)
-    kwargs['sock']     = getattr(settings, 'COLDOC_TASKS_SOCKET', None)
-    kwargs['auth']     = getattr(settings, 'COLDOC_TASKS_PASSWORD', None)
-    kwargs['logfile']  = getattr(settings, 'COLDOC_TASKS_LOGFILE', None)
-    kwargs['tempdir']  = getattr(settings, 'COLDOC_TASKS_TEMPDIR', default_tempdir)
-    kwargs['pythonpath'] = getattr(settings, 'COLDOC_TASKS_PYTHONPATH', tuple())
+    _read_django_settings(kwargs, settings)
     #
     kwargs['subcmd'] = ['django_start_with']
     proc, info = tasks_daemon_autostart(**kwargs)
