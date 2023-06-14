@@ -389,6 +389,11 @@ def run_server(address, authkey, infofile, **kwargs):
     #
     tempdir     = kwargs.pop('tempdir', default_tempdir)
     with_django = kwargs.pop('with_django', False)
+    logfile     = kwargs.pop('logfile', None)
+    if logfile:
+        h = logging.handlers.RotatingFileHandler(logfile, maxBytes=2 ** 16, backupCount=5)
+        logger.addHandler(h)
+    #
     if kwargs :
         logger.warning('Some kwargs where ignored: %r ',kwargs)
     #
