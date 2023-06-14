@@ -20,6 +20,14 @@ __doc__ = """
      start server, reading credentials from django settings
      (see below)
 
+  daemon infofile [socket] [authkey]
+
+     as `start`, but forks a separate process
+
+  django_daemon
+
+     as `django_start` , but forks a separate process
+
   start_from infofile
   
      read the information from the infofile and start it
@@ -639,6 +647,8 @@ def _read_django_settings(kwargs, settings):
     kwargs['tempdir']  = getattr(settings, 'COLDOC_TASKS_TEMPDIR', default_tempdir)
     kwargs['pythonpath'] = getattr(settings, 'COLDOC_TASKS_PYTHONPATH', tuple())
     kwargs['with_django'] = True
+
+
 def task_server_check(info):
     """ accepts the infofile
     returns  `status, sock, auth, pid` , where `status` is a boolean"""
@@ -888,14 +898,15 @@ def main(argv):
             print( __doc__)
             return False
         info = argv[1]
-    if  'start' == argv[0] and len(argv) in (3,4):
-        infofile, address= argv[1:3]
-        if len(argv) == 3:
-            authkey = os.urandom(8)
+    if  argv[0] in ('start', 'daemon'):
+        address = argv[2].encode() if len(argv) > 2 else None
+        authkey = argv[3].encode() if len(argv) > 3 else None
+        if argv[0] == 'start':
+            return tasks_server_start(address=address, authkey=authkey, infofile=info)
         else:
-            authkey =  argv[3]
-            authkey = authkey.encode()
-        return tasks_server_start(address, authkey, infofile)
+            # re-enable starting daemon
+            os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] =  ''
+            return tasks_daemon_autostart(infofile=info, address=address, authkey=authkey)
     #
     try:
         address, authkey, pid = tasks_server_readinfo(info)
