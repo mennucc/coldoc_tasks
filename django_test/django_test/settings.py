@@ -125,6 +125,12 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-COLDOC_TASKS_INFOFILE = os.path.join(BASE_DIR, 'infofile')
+try:
+    os.mkdir(os.path.join(BASE_DIR, 'run'))
+except:
+     pass
+
+COLDOC_TASKS_INFOFILE = os.path.join(BASE_DIR, 'run', 'infofile')
 COLDOC_TASKS_PYTHONPATH = BASE_DIR
+COLDOC_TASKS_LOGFILE = os.path.join(BASE_DIR, 'run', 'server.log')
 
