@@ -401,7 +401,7 @@ def main(argv):
         elif proc is True:
             print('already started')
         elif getattr(proc,'pid'):
-            print('started as %r', proc.pid)
+            print('started as pid: %r' % proc.pid)
         else:
             assert False
         return True
