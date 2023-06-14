@@ -408,6 +408,7 @@ def run_server(address, authkey, infofile, **kwargs):
     processes = {}
     try:
         if with_django:
+            os.environ.pop('COLDOC_TASKS_AUTOSTART', None)
             os.environ.setdefault('DJANGO_SETTINGS_MODULE', with_django)
             import django
             django.setup()
@@ -795,6 +796,7 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
             #
             proc = multiprocessing.Process(target=tasks_server_start,
                                            args=(address, authkey, infofile))
+            os.environ.pop('COLDOC_TASKS_AUTOSTART', None)
             if flag is None:
                 del os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS']
             else:
@@ -819,7 +821,9 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
             else:
                 args += ['start_with', infofile]
             env = dict(os.environ)
-            env['COLDOC_TASKS_AUTOSTART_OPTIONS'] = 'nocheck,noautostart'
+            # avoid looping 
+            env.pop('COLDOC_TASKS_AUTOSTART',None)
+            #
             if pythonpath:
                 env['PYTHONPATH'] = os.pathsep.join(pythonpath)
             if tempdir:
