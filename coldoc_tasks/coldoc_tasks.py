@@ -380,17 +380,24 @@ def _fork_mp_wrapper(*args, **kwargs):
     os.unlink(F)
 
 
-def run_server(address, authkey, with_django=False, tempdir=default_tempdir):
+def run_server(address, authkey, infofile, **kwargs):
+    L = multiprocessing.log_to_stderr()
+    global logger
+    L.setLevel(logger.getEffectiveLevel())
+    logger = L
+    #
+    tempdir     = kwargs.pop('tempdir', default_tempdir)
+    with_django = kwargs.pop('with_django', False)
+    if kwargs :
+        logger.warning('Some kwargs where ignored: %r ',kwargs)
+    #
     manager = multiprocessing.managers.SyncManager(address=address, authkey=authkey)
     #
     return_code = True
     # currently tje code work better without a subprocess
     run_with_subprocess = False
     #
-    L = multiprocessing.log_to_stderr()
-    global logger
-    L.setLevel(logger.getEffectiveLevel())
-    logger = L
+    #
     pool = server = None
     processes = {}
     try:
@@ -620,24 +627,24 @@ def tasks_server_writeinfo(infofile, address, authkey, pid=None):
         F.write('address=%s\nauth64=%s\n' %\
                 (repr(address), base64.b32encode(authkey).decode('ascii')))
 
-def __tasks_server_start_nolock(address, authkey, infofile, with_django=None, tempdir=default_tempdir):
+def __tasks_server_start_nolock(address, authkey, infofile, **kwargs):
     tasks_server_writeinfo(infofile, address, authkey, os.getpid())
     ret = False
     try:
-        ret = run_server(address, authkey, with_django, tempdir)
+        ret = run_server(address, authkey, infofile, **kwargs)
     except:
         logger.exception('When running task server')
     return ret
 
-def tasks_server_start(address, authkey, infofile, with_django=None, tempdir=default_tempdir):
+def tasks_server_start(address, authkey, infofile, tempdir=default_tempdir, **kwargs):
     " start a server with `address` and `authkey` ,  saving info in `infofile (that is locked while in use)"
     infofile, address, authkey, tempdir = _fix_parameters(infofile, address, authkey, tempdir)
     if lockfile:
         lock = lockfile.FileLock(infofile, timeout=2)
         with lock:
-            return __tasks_server_start_nolock(address, authkey, infofile, with_django, tempdir)
+            return __tasks_server_start_nolock(address, authkey, infofile, tempdir=tempdir, **kwargs)
     else:
-        return __tasks_server_start_nolock(address, authkey, infofile, with_django, tempdir)
+        return __tasks_server_start_nolock(address, authkey, infofile, tempdir=tempdir, **kwargs)
 
 
 def _read_django_settings(kwargs, settings):
