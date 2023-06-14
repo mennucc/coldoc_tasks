@@ -173,7 +173,7 @@ Integration with Django is thru these variables in the _setting.py_ file
   If absent, a temporary file is used.
 
 - `COLDOC_TASKS_PASSWORD`  
-  the password (to secure communications)  (used when the server is autostarted);
+  the password used to secure communications (used when the server is autostarted);
   if absent, a random password will be generated.
 
 - `COLDOC_TASKS_CELERYCONFIG`  
