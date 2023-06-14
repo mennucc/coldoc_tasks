@@ -99,10 +99,10 @@ class choose_best_fork_class(object):
             refresh = True
         #
         if refresh:
-            logger.info('Refreshing choice of `fork_class`')
             self.time_choice = t
             self.last_fork_class = _choose_best_fork_class(self.infofile, self.celeryconfig, self.preferences)
             self.fork_type = self.last_fork_class.fork_type
+            logger.info('Refreshing choice of `fork_class` to %r', self.fork_type)
             assert self.fork_type in all_fork_classes
             if self.callback:
                 self.callback(self.last_fork_class)
