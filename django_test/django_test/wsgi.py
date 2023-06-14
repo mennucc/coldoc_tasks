@@ -11,6 +11,8 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
+os.environ['COLDOC_TASKS_AUTOSTART'] = 'all'
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_test.settings')
 
 application = get_wsgi_application()
