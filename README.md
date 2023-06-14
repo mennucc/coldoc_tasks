@@ -61,17 +61,18 @@ Starting the server
 
 The command to start the server has synopsis
 
-    python3 coldoc_tasks/coldoc_tasks.py start infofile socket [authkey]
+    coldoc_tasks_cli coldoc start infofile socket [authkey]
 
 for example
 
-    python3 coldoc_tasks/coldoc_tasks.py start /tmp/info1 /tmp/sock1
+    coldoc_tasks_cli coldoc start /tmp/info1 /tmp/sock1
 
 To start a celery server, you can use
 
-    python3 coldoc_tasks/celery_tasks.py daemon etc/celeryconfig.py 
+    coldoc_tasks_cli celery daemon celeryconfig.py 
 
-where `etc/celeryconfig.py` is set to use the `redis` server, in turn.
+There is an example *etc/celeryconfig.py* in source code of
+the package, that uses the *redis* server.
 In Ubuntu/Debian machines the redis server can be installed by
 
     sudo apt install redis

@@ -837,6 +837,9 @@ def __countthem():
 
 def main(argv):
     assert isinstance(argv, (tuple, list))
+    if not argv:
+        print( __doc__)
+        return False
     if argv[0].startswith('django_server_'):
         if os.environ.get('DJANGO_SETTINGS_MODULE') is None:
             logger.error('environmental variable DJANGO_SETTINGS_MODULE must be set')
