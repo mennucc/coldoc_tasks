@@ -713,7 +713,7 @@ def _fix_parameters(infofile=None, sock=None, auth=None,
         if mytempdir is None:
             mytempdir = tempfile.mkdtemp(prefix='coldoc_tasks_', dir=tempdir)
         sock = os.path.join(mytempdir, 'socket')
-    auth = auth or auth_ or os.urandom(8)
+    auth = auth or auth_ or os.urandom(10)
     mytempdir = mytempdir or tempdir
     assert isinstance(sock, (str, bytes, Path))
     assert isinstance(auth, bytes)
