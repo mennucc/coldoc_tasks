@@ -17,7 +17,7 @@ __doc__ = """
 
   django_start
 
-     start server, reading credentials from django settings
+     start server, getting the above info from django settings
      (see below)
 
   daemon infofile [socket] [authkey]
@@ -58,11 +58,12 @@ __doc__ = """
   
       ping server
       
-For each command, there is `django_server..` version:
-this versione initializes a django instance, and looks
-into the settings for `COLDOC_TASKS_INFOFILE` to know
-where the infofile is; when starting the server,
-moreover, it gets the authkey from settings.COLDOC_TASKS_PASSWORD
+For each command, there is `django_..` version:
+this version initializes a django instance, and looks
+into the settings for all informations (see README.md):
+it uses `COLDOC_TASKS_INFOFILE` to know where the infofile is;
+when starting the server, moreover,
+it gets the authkey from settings.COLDOC_TASKS_PASSWORD
 and the socket filename from  settings.COLDOC_TASKS_SOCKET
 and writes the infofile
 """
