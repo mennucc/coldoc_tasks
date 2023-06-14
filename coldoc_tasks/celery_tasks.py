@@ -5,7 +5,7 @@ __doc__ = """
 
       start Celery server
 
-  daemon celeryconfig.py
+  daemon celeryconfig.py [logfile]
 
       start Celery server as daemon
 
@@ -378,12 +378,21 @@ def main(argv):
         return run_server(celeryconfig=argv[1])
     elif  'daemon' == argv[0] :
         logger.setLevel(logging.DEBUG)
-        logfile = tempfile.NamedTemporaryFile(delete=False)
+        if len(argv) > 1:
+            celeryconfig=argv[1]
+        else:
+            celeryconfig = os.path.join(sourcedir,'etc','celeryconfig.py')
+        if len(argv) > 2:
+            logfile = argv[2]
+            assert logfile != celeryconfig
+        else:
+            logfile_ = tempfile.NamedTemporaryFile(delete=False, prefix='coldoc_tasks_celery_server')
+            logfile = logfile_.name
         sourcedir = os.path.dirname(os.path.dirname(__file__))
-        celeryconfig = os.path.join(sourcedir,'etc','celeryconfig.py')
+
         proc = tasks_daemon_autostart(celeryconfig,
-                                                                logfile=logfile.name,
-                                                                pythonpath=(sourcedir,))
+                                      logfile=logfile,
+                                      pythonpath=(sourcedir,))
         if not proc:
                 logger.critical("could not start server! log follows \n" + ('v' * 70) +\
                                 open(logfile.name).read() + '\n' +  ('^' * 70))
