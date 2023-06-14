@@ -2,17 +2,18 @@
 
 __doc__ = """
 
-  start infofile socket authkey 
+  start infofile [socket] [authkey]
   
       start server
       
       socket is the file for the socket;
-      
-      infofile is a file where informations
-       regarding the server are stored
+       (if missing, a temporary one will be generated)
        
        authkey is a password for the server
        (if missing, a random one will be generated)
+
+      infofile is a file where informations
+       regarding the server are stored
 
   django_start
 
@@ -621,6 +622,7 @@ def __tasks_server_start_nolock(address, authkey, infofile, with_django=None, te
 
 def tasks_server_start(address, authkey, infofile, with_django=None, tempdir=default_tempdir):
     " start a server with `address` and `authkey` ,  saving info in `infofile (that is locked while in use)"
+    infofile, address, authkey, tempdir = _fix_parameters(infofile, address, authkey, tempdir)
     if lockfile:
         lock = lockfile.FileLock(infofile, timeout=2)
         with lock:
