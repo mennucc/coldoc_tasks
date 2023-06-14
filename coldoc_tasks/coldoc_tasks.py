@@ -599,14 +599,22 @@ def tasks_server_readinfo(infofile):
         if line.startswith('pid='):
             pid = int(line[4:])
         #
+        elif line.startswith('auth='):
+            authkey = line[5:].strip().encode()
         elif line.startswith('auth64='):
+            line=line[7:].strip()
+            try:
+                a = line.encode('ascii')
+                authkey = base64.b64decode(a)
+            except Exception as E:
+                logger.warning('In info file %r error parsing auth64 %r: %r', infofile, line, E)
+        elif line.startswith('auth32='):
             line=line[7:].strip()
             try:
                 a = line.encode('ascii')
                 authkey = base64.b32decode(a)
             except Exception as E:
-                logger.warning('In info file %r error parsing auth64 %r: %r', infofile, line, E)
-        #
+                logger.warning('In info file %r error parsing auth32 %r: %r', infofile, line, E)        #
         elif line.startswith('address='):
             line=line[8:].strip()
             try:
@@ -624,7 +632,7 @@ def tasks_server_writeinfo(infofile, address, authkey, pid=None):
         _mychmod(infofile)
         if pid:
             F.write('pid=%d\n' % (pid,) )
-        F.write('address=%s\nauth64=%s\n' %\
+        F.write('address=%s\nauth32=%s\n' %\
                 (repr(address), base64.b32encode(authkey).decode('ascii')))
 
 def __tasks_server_start_nolock(address, authkey, infofile, **kwargs):
