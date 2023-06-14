@@ -707,6 +707,7 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
                            force = False,
                            # this option is used to wrap this function for Django...
                            subcmd=None,
+                           **kwargs
                            ):
     """ Check if there is a server running using `infofile`;
     if there is, return (PID, infofile),      if not, start it (as a subprocess), and return(`proc`, `infofile`)
@@ -725,6 +726,8 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
     The argument `opt` overrides that env variable. The argument `force`, if set, ignores the previous two.
       """
     #
+    if kwargs:
+        logger.warning('Some kwargs were ignored: %r',kwargs)
     #
     ok = False
     if opt is None:
