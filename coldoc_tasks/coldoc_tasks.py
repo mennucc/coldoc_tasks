@@ -14,7 +14,7 @@ __doc__ = """
        authkey is a password for the server
        (if missing, a random one will be generated)
 
-  django_server_start
+  django_start
 
      start server, reading credentials from django settings
      (see below)
@@ -24,27 +24,27 @@ __doc__ = """
      read the information from the infofile and start it
 
   stop infofile
-  django_server_stop
+  django_stop
 
       stop server
 
   test infofile
-  django_server_test
+  django_test
 
       test server
 
   test_hanging infofile
-  django_server_test_hanging
+  django_test_hanging
 
       create hanging job in  server
 
   status infofile
-  django_server_status
+  django_status
 
       status of server
 
   ping infofile
-  django_server_ping
+  django_ping
   
       ping server
       
@@ -806,7 +806,7 @@ def tasks_daemon_django_autostart(settings, **kwargs):
     kwargs['tempdir']  = getattr(settings, 'COLDOC_TASKS_TEMPDIR', default_tempdir)
     kwargs['pythonpath'] = getattr(settings, 'COLDOC_TASKS_PYTHONPATH', tuple())
     #
-    kwargs['subcmd'] = ['django_server_start_with']
+    kwargs['subcmd'] = ['django_start_with']
     proc, info = tasks_daemon_autostart(**kwargs)
     if proc:
         settings.COLDOC_TASKS_COLDOC_PROC = proc
@@ -840,7 +840,7 @@ def main(argv):
     if not argv:
         print( __doc__)
         return False
-    if argv[0].startswith('django_server_'):
+    if argv[0].startswith('django_'):
         if os.environ.get('DJANGO_SETTINGS_MODULE') is None:
             logger.error('environmental variable DJANGO_SETTINGS_MODULE must be set')
             return False
@@ -863,7 +863,7 @@ def main(argv):
         django.setup()
         from django.conf import settings
         #
-        if argv[0] == 'django_server_start_with':
+        if argv[0] == 'django_start_with':
             if len(argv)<= 1:
                 print( __doc__)
                 return False
@@ -873,11 +873,11 @@ def main(argv):
         if info is None:
             logger.error('This command needs that `COLDOC_TASKS_INFOFILE` be defined in `settings`')
             return False
-        if argv[0] in (  'django_server_start' , 'django_server_start_with' ):
+        if argv[0] in (  'django_start' , 'django_start_with' ):
             address, authkey = tasks_server_readinfo(info)[:2]
             return tasks_server_start(address=address, authkey=authkey, infofile= info)
         #
-        argv[0]  = argv[0][len('django_server_'):]
+        argv[0]  = argv[0][len('django_'):]
     else:
         if len(argv)<= 1:
             print( __doc__)

@@ -200,6 +200,16 @@ Integration with Django is thru these variables in the _setting.py_ file
 
 
 
+starting the server
+-------------------
+
+The command to start the server has synopsis
+
+    coldoc_tasks_cli coldoc django_start
+
+getting this to work properly requires that `PYTHONPATH`
+be set to the root of the Django code.
+
 autostarting
 ------------
 
