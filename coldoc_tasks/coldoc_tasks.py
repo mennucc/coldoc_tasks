@@ -705,12 +705,12 @@ def _fix_parameters(infofile=None, sock=None, auth=None,
         if infofile is not None:
             logger.warning('Unsupported type for infofile: %r', infofile)
         # TODO FIXME this temporary subdir should be deleted on end
-        mytempdir = tempfile.mkdtemp(prefix='coldoc_tasks', dir=tempdir)
+        mytempdir = tempfile.mkdtemp(prefix='coldoc_tasks_', dir=tempdir)
         infofile = os.path.join(mytempdir, 'infofile')
     sock = sock or sock_
     if sock is None:
         if mytempdir is None:
-            mytempdir = tempfile.mkdtemp(prefix='coldoc_tasks', dir=tempdir)
+            mytempdir = tempfile.mkdtemp(prefix='coldoc_tasks_', dir=tempdir)
         sock = os.path.join(mytempdir, 'socket')
     auth = auth or auth_ or os.urandom(8)
     mytempdir = mytempdir or tempdir
