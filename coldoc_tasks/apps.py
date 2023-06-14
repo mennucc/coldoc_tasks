@@ -8,13 +8,28 @@ from django.apps import AppConfig
 from django.conf import settings
 
 def autostart(sett_):
-    opt = os.environ.get('COLDOC_TASKS_AUTOSTART','').split(',')
+    ' sett_ is usually the Django setting'
+    from coldoc_tasks.task_utils import all_fork_classes
+    realopt = os.environ.get('COLDOC_TASKS_AUTOSTART')
+    if realopt is None:
+        # safeguard against unwanted (sometimes recursive) activation
+        logger.info('no COLDOC_TASKS_AUTOSTART environ, not starting any server')
+        return
+    opt = realopt.split(',')
     if 'all' in opt:
-        from coldoc_tasks.task_utils import all_fork_classes
         opt = all_fork_classes
-    # safeguard against unwanted (sometimes recursive) activation
+    elif set(opt).difference_update(all_fork_classes):
+        logger.error('COLDOC_TASKS_AUTOSTART environ %r contains keywords not in %r',
+                  opt,all_fork_classes)
+    if not hasattr(sett_, 'COLDOC_TASKS_AUTOSTART'):
+        logger.info('no COLDOC_TASKS_AUTOSTART setting, not starting any server')
+        return
     autostart = getattr(sett_, 'COLDOC_TASKS_AUTOSTART','')
     autostart=autostart.split(',')
+    if set(autostart).difference_update(all_fork_classes):
+        logger.error('setting COLDOC_TASKS_AUTOSTART %r contains keywords not in %r',
+                  autostart,all_fork_classes)
+    #
     generic_logfile = getattr(sett_, 'COLDOC_TASKS_LOGFILE', None)
     pythonpath = getattr(sett_, 'COLDOC_TASKS_PYTHONPATH', tuple())
     celeryconfig = getattr(sett_, 'COLDOC_TASKS_CELERYCONFIG', None)
@@ -44,7 +59,8 @@ def autostart(sett_):
                 sett_.COLDOC_TASKS_AUTOSTART_COLDOC_PROC = proc
                 sett_.COLDOC_TASKS_AUTOSTART_INFOFILE = info
         else:
-            logger.error('COLDOC_TASKS_AUTOSTART %r contains an unknown word %r', autostart, j)
+            logger.error('COLDOC_TASKS_AUTOSTART: settings %r requested to start %r, but environ is %r : skipped',
+                         autostart, j, opt)
 
 class ColDocTasksAppConfig(AppConfig):
     name = 'coldoc_tasks'
