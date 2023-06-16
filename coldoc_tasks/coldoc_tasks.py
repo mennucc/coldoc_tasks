@@ -99,7 +99,8 @@ if __name__ == '__main__':
     
 
 from coldoc_tasks.simple_tasks import fork_class_base
-from coldoc_tasks.task_utils import _normalize_pythonpath
+from coldoc_tasks.task_utils import _normalize_pythonpath, mychmod
+from coldoc_tasks.task_utils import read_config, write_config
 from coldoc_tasks.exceptions import *
 
 
@@ -108,13 +109,7 @@ __all__ = ('get_manager', 'run_server', 'ping', 'status', 'shutdown', 'test', 'f
            'tasks_daemon_autostart', 'tasks_daemon_django_autostart',
            'tasks_server_readinfo', 'tasks_server_writeinfo', 'tasks_server_start', 'task_server_check')
 
-default_chmod = 0o600
 
-def _mychmod(f, mode=default_chmod):
-    try:
-        os.chmod(f, mode)
-    except:
-        logger.exception('Why cant I set chmod %r on %r', mode, f)
 
 ##########################
 
@@ -142,7 +137,7 @@ def __socket_server(socket_, access_pair, rets, id_):
         socket_ = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         socket_.bind(socket_name)
         socket_.listen(2)
-        _mychmod(socket_name)
+        mychmod(socket_name)
     #
     sent = False
     with socket_ as s:
@@ -441,7 +436,7 @@ def run_server(address, authkey, infofile, **kwargs):
             socket_ = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             socket_.bind(F)
             socket_.listen(2)
-            _mychmod(F)
+            mychmod(F)
             #
             if pipe is None:
                 pipe = multiprocessing.Pipe()
@@ -594,53 +589,26 @@ def server_wait(address, authkey, timeout = 2.0):
 
 ######################## code to start server
 
+infofile_keywords = ('address', 'authkey', 'pid')
+
 def tasks_server_readinfo(infofile):
     " reads address, authkey, pid"
-    address=None
-    authkey=None
-    pid=None
+    ret = [None] * ( len(infofile_keywords) )
     #
-    for line in open(infofile):
-        line = line.strip()
-        #
-        if line.startswith('pid='):
-            pid = int(line[4:])
-        #
-        elif line.startswith('auth='):
-            authkey = line[5:].strip().encode()
-        elif line.startswith('auth64='):
-            line=line[7:].strip()
-            try:
-                a = line.encode('ascii')
-                authkey = base64.b64decode(a)
-            except Exception as E:
-                logger.warning('In info file %r error parsing auth64 %r: %r', infofile, line, E)
-        elif line.startswith('auth32='):
-            line=line[7:].strip()
-            try:
-                a = line.encode('ascii')
-                authkey = base64.b32decode(a)
-            except Exception as E:
-                logger.warning('In info file %r error parsing auth32 %r: %r', infofile, line, E)        #
-        elif line.startswith('address='):
-            line=line[8:].strip()
-            try:
-                address = eval(line, {'__builtins__':{}}, {})
-            except Exception as E:
-                logger.warning('In info file %r error parsing address %r: E', infofile, line, E)
-        #
-        elif line and  not line.startswith('#'):
-            logger.warning('In info file %r ignored line %r', infofile, line)
-        #
-    return address, authkey, pid
+    db = read_config(infofile)
+    for n,k in enumerate(infofile_keywords):
+        if k in db:
+            ret [ n ] = db.pop(k)
+    # ret[-1] = db
+    return ret
 
-def tasks_server_writeinfo(infofile, address, authkey, pid=None):
-    with open(infofile,'w') as F:
-        _mychmod(infofile)
-        if pid:
-            F.write('pid=%d\n' % (pid,) )
-        F.write('address=%s\nauth32=%s\n' %\
-                (repr(address), base64.b32encode(authkey).decode('ascii')))
+def tasks_server_writeinfo(infofile, *args, **kwargs):
+    kw = copy.copy(kwargs)
+    for j in range(len(args)):
+        k = infofile_keywords[j]
+        v = args[j]
+        kw[k] = v
+    return write_config(infofile, kw)
 
 def __tasks_server_start_nolock(address, authkey, infofile, **kwargs):
     tasks_server_writeinfo(infofile, address, authkey, os.getpid())
@@ -836,7 +804,7 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
         # check it
         ok = server_wait(address, authkey,timeout)
         if ok:
-            _mychmod(address)
+            mychmod(address)
         #
         if not ok:
             logger.critical('Cannot start task process, see %r', getattr(logfile_,'name', logfile_))
