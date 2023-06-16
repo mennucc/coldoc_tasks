@@ -53,24 +53,25 @@ class TestUtils(unittest.TestCase):
         t = tempfile.NamedTemporaryFile(prefix='testo_')
         n = t.name
         TU.write_config(n, example_db)
-        ndb = TU.read_config(n)
+        ndb, sdb = TU.read_config(n)
         self.assertEqual(example_db, ndb)
 
     def test_config_wr2(self):
         out = io.StringIO()
         TU.write_config(out, example_db)
         out.seek(0)
-        ndb = TU.read_config(out)
+        ndb, sdb = TU.read_config(out)
         #print(out.getvalue())
         self.assertEqual(example_db, ndb)
 
 
     def test_config_rw(self):
-        ndb = TU.read_config(io.StringIO(exampleconfig))
+        ndb, sdb = TU.read_config(io.StringIO(exampleconfig))
         #print(repr(ndb['texto']))
         out = io.StringIO()
-        TU.write_config(out, ndb)
-        self.assertEqual(exampleconfig, out.getvalue())
+        TU.write_config(out, ndb, sdb)
+        out = out.getvalue()
+        self.assertEqual(exampleconfig, out)
 
 if __name__ == '__main__':
     #

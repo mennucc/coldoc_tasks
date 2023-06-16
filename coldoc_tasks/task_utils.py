@@ -37,22 +37,16 @@ def mychmod(f, mode=default_chmod):
 # combinations of the above are accepted, in correct order
 
 
-def write_config(infofile, db):
+def write_config(infofile, db, sdb=[], rewrite_old = False):
+    " `db` is the key/value to write ; `sdb` is the structure of the infofile; `rewrite_old` rewrites k/v not in `db`"
     if isinstance(infofile, (str, bytes, Path)): 
         with open(infofile,'w') as F:
             mychmod(infofile)
-            write_config(F, db)
+            write_config(F, db, sdb)
         return
     F = infofile
-    dbc = copy.copy(db)
-    n = 0
-    for k,v in db.items():
-        if isinstance(k,int):
-            continue
-        n += 1
-        while n in db:
-            F.write( dbc.pop(n) + '\n' )
-            n += 1
+    #
+    def write_k_v(k,v,F):
         assert '=' not in k and '/' not in k
         if isinstance(v,str):
             if any( (ord(j)<32)  for j in v ):
@@ -72,10 +66,21 @@ def write_config(infofile, db):
         #    F.write('%s/f=%r\n'% (k,v))
         else:
             F.write('%s/64p=%s\n' % (k, base64.b64encode(pickle.dumps(v)).decode('ascii')))
-        dbc.pop(k)
-    for k in dbc.keys():
-        assert isinstance(k,int)
-        F.write( dbc[k] + '\n' )
+    #
+    db = copy.copy(db)
+    # write keys that were in file, in same position
+    for k,m,l in sdb:
+        if k and k in db:
+            write_k_v(k,db[k],F)
+            db.pop(k)
+        elif k and rewrite_old:
+            F.write(l)
+        # invalid lines are not rewritten
+        elif k is None:
+            F.write(l)
+    # write new keys
+    for k in db.keys():
+        write_k_v(k,db[k],F)
 
 
 def read_config(infofile):
@@ -86,29 +91,29 @@ def read_config(infofile):
     return  _read_config(infofile)
 
 def _read_config(infofile):
-    " `infofile` must iterate to text lines"
+    " `infofile` must iterate to text lines; returns `(db, sdb)` where `db` are the extracted key,value, `sdb` is the structure of the file"
     def B(x): # to byte
         if isinstance(x, str):
             x.encode('utf8')
         return x
     db = {}
-    n = 0
-    for line in infofile:
-        n += 1
-        line = line.rstrip('\n\r')
+    sdb = []
+    for line_ in infofile:
+        line = line_.rstrip('\n\r')
         # skip comments and empty lines
         if not line.strip() or line.strip().startswith('#'):
-            db[n] = line
+            sdb.append( (None, None, line_) )
             continue
         if '=' not in line:
             logger.warning('In info file %r ignored line %r', infofile, line)
-            db[n] = '# IGNORED : ' + line
+            sdb.append( (False, False, line_) )
             continue
         try:
             key,value = line.split('=',1)
             m=''
             if '/' in key:
                 key,m = key.split('/',1)
+            sdb.append( (key, m, line_) )
             while m:
                 if m.startswith('p'):
                     value = pickle.loads(B(value))
@@ -150,7 +155,7 @@ def _read_config(infofile):
             db[key] = value
         except Exception as E:
             logger.warning('In info file %r error parsing  %r : %r', infofile, line, E)
-    return db
+    return db, sdb
 
 ####
 

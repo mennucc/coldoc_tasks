@@ -594,8 +594,7 @@ infofile_keywords = ('address', 'authkey', 'pid')
 def tasks_server_readinfo(infofile):
     " reads address, authkey, pid"
     ret = [None] * ( len(infofile_keywords) )
-    #
-    db = read_config(infofile)
+    db, sdb = read_config(infofile)
     for n,k in enumerate(infofile_keywords):
         if k in db:
             ret [ n ] = db.pop(k)
@@ -608,7 +607,12 @@ def tasks_server_writeinfo(infofile, *args, **kwargs):
         k = infofile_keywords[j]
         v = args[j]
         kw[k] = v
-    return write_config(infofile, kw)
+    # we preserve the file structure
+    if infofile and os.path.exists(infofile):
+        db, sdb = read_config(infofile)
+    else:
+        sdb = []
+    return write_config(infofile, kw, sdb)
 
 def __tasks_server_start_nolock(address, authkey, infofile, **kwargs):
     tasks_server_writeinfo(infofile, address, authkey, os.getpid())
