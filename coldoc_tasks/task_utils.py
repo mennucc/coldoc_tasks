@@ -1,4 +1,4 @@
-import sys, os, time, pickle, functools, time
+import sys, os, time, pickle, functools, time, base64, copy
 from os.path import join as osjoin
 from pathlib import Path
 
@@ -10,6 +10,147 @@ try:
 except ImportError:
     celery = None
 
+####
+
+default_chmod = 0o600
+
+def mychmod(f, mode=default_chmod):
+    try:
+        os.chmod(f, mode)
+    except:
+        logger.exception('Why cant I set chmod %r on %r', mode, f)
+
+
+
+####
+
+
+# the format of the infofile is key/modifier=value
+# when reading , `value` starts as `str`
+# if modifier start with 32 or 64, value is base decoded
+# if modifier start with p, value is unpickled
+# if modifier start with i, value is converted to integer
+# if modifier start with f, value is converted to float
+# if modifier start with s, value is converted to string, utf8
+# if modifier start with b, value is converted to bytes, utf8
+# if modifier start with r, value is evaluated
+# combinations of the above are accepted, in correct order
+
+
+def write_config(infofile, db):
+    if isinstance(infofile, (str, bytes, Path)): 
+        with open(infofile,'w') as F:
+            mychmod(infofile)
+            write_config(F, db)
+        return
+    F = infofile
+    dbc = copy.copy(db)
+    n = 0
+    for k,v in db.items():
+        if isinstance(k,int):
+            continue
+        n += 1
+        while n in db:
+            F.write( dbc.pop(n) + '\n' )
+            n += 1
+        assert '=' not in k and '/' not in k
+        if isinstance(v,str):
+            if any( (ord(j)<32)  for j in v ):
+                v = v.encode('utf8')
+                v = base64.b64encode(v)
+                v = v.decode()
+                F.write('%s/64s=%s\n' % (k, v) )
+            else:
+                F.write('%s=%s\n' % (k,v))
+        elif isinstance(v,int):
+            F.write('%s/i=%d\n'% (k,v))
+        elif isinstance(v,float):
+            F.write('%s/f=%r\n'% (k,v))
+        elif isinstance(v,bytes):
+            F.write('%s/32=%s\n'  % (k, base64.b32encode(v).decode('ascii')))
+        #elif v == eval(repr(v)):
+        #    F.write('%s/f=%r\n'% (k,v))
+        else:
+            F.write('%s/64p=%s\n' % (k, base64.b64encode(pickle.dumps(v)).decode('ascii')))
+        dbc.pop(k)
+    for k in dbc.keys():
+        assert isinstance(k,int)
+        F.write( dbc[k] + '\n' )
+
+
+def read_config(infofile):
+    if isinstance(infofile, (str,bytes, Path)): 
+        with open(infofile) as F:
+            db = _read_config(F)
+        return db
+    return  _read_config(infofile)
+
+def _read_config(infofile):
+    " `infofile` must iterate to text lines"
+    def B(x): # to byte
+        if isinstance(x, str):
+            x.encode('utf8')
+        return x
+    db = {}
+    n = 0
+    for line in infofile:
+        n += 1
+        line = line.rstrip('\n\r')
+        # skip comments and empty lines
+        if not line.strip() or line.strip().startswith('#'):
+            db[n] = line
+            continue
+        if '=' not in line:
+            logger.warning('In info file %r ignored line %r', infofile, line)
+            db[n] = '# IGNORED : ' + line
+            continue
+        try:
+            key,value = line.split('=',1)
+            m=''
+            if '/' in key:
+                key,m = key.split('/',1)
+            while m:
+                if m.startswith('p'):
+                    value = pickle.loads(B(value))
+                    m = m[1:]
+                elif m.startswith('s'):
+                    if isinstance(value, bytes):
+                        value = value.decode('utf8')
+                    elif isinstance(value, int):
+                        value = str(value)
+                    else:
+                        logger.warning('Cannot convert to string the value : %r', value)
+                    m = m[1:]
+                elif m.startswith('b'):
+                    if isinstance(value, str):
+                        value = value.encode('utf8')
+                    #elif isinstance(value, int):
+                    #    value = value.to_bytes(....)
+                    else:
+                        logger.warning('Cannot convert to bytes the value : %r', value)
+                    m = m[1:]
+                elif m.startswith('i'):
+                    value = int(value)
+                    m = m[1:]
+                elif m.startswith('f'):
+                    value = float(value)
+                    m = m[1:]
+                elif m.startswith('r'):
+                    value = eval(value)
+                    m = m[1:]
+                elif m.startswith('32'):
+                    value = base64.b32decode(B(value))
+                    m = m[2:]
+                elif m.startswith('64'):
+                    value = base64.b64decode(B(value))
+                    m = m[2:]
+                else:
+                    logger.error('error parsing line modifiers : %r', line)
+                    break
+            db[key] = value
+        except Exception as E:
+            logger.warning('In info file %r error parsing  %r : %r', infofile, line, E)
+    return db
 
 ####
 
