@@ -69,7 +69,8 @@ and writes the infofile
 """
 
 
-import os, sys, time, pickle, base64, functools, multiprocessing, multiprocessing.managers
+import os, sys, time, pickle, base64, functools
+import subprocess, multiprocessing.managers
 import random, socket, struct, tempfile, copy, threading
 from pathlib  import Path
 
@@ -829,7 +830,6 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
             if tempdir:
                 for j in ('TMPDIR', 'TEMP', 'TMP'):
                     env[j] = str(tempdir)
-            import subprocess
             proc = subprocess.Popen(args, stdin=open(os.devnull), stdout=logfile_,
                                     env = env,
                                     stderr=subprocess.STDOUT, text=True,  cwd=cwd)
