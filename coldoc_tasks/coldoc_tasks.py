@@ -593,13 +593,13 @@ def server_wait(address, authkey, timeout = 2.0):
 infofile_keywords = ('address', 'authkey', 'pid')
 
 def tasks_server_readinfo(infofile):
-    " reads address, authkey, pid"
-    ret = [None] * ( len(infofile_keywords) )
+    "returns  (address, authkey, pid, dict_of_other_options)"
+    ret = [None] * (1+ len(infofile_keywords) )
     db, sdb = read_config(infofile)
     for n,k in enumerate(infofile_keywords):
         if k in db:
             ret [ n ] = db.pop(k)
-    # ret[-1] = db
+    ret[-1] = db
     return ret
 
 def tasks_server_writeinfo(infofile, *args, **kwargs):
@@ -653,7 +653,7 @@ def task_server_check(info):
     """ accepts the infofile
     returns  `status, sock, auth, pid` , where `status` is a boolean"""
     if os.path.isfile(info):
-        sock, auth, pid = tasks_server_readinfo(info)
+        sock, auth, pid = tasks_server_readinfo(info)[:3]
         if not( sock and auth):
             logger.error('One of address, authkey is missing from %r',info)
             return False, sock, auth, pid
@@ -674,7 +674,7 @@ def _fix_parameters(infofile=None, sock=None, auth=None,
     #
     if isinstance(infofile, (str, bytes, Path)):
         if  os.path.isfile(infofile):
-            sock_, auth_, pid_ = tasks_server_readinfo(infofile)
+            sock_, auth_, pid_, other_ = tasks_server_readinfo(infofile)
             if sock and sock_ and sock != sock_:
                 logger.warning('Changing infofile  socket  %r > %r ', sock_, sock)
             sock = sock or sock_
@@ -944,7 +944,7 @@ def main(argv):
             return tasks_daemon_autostart(infofile=info, address=address, authkey=authkey)
     #
     try:
-        address, authkey, pid = tasks_server_readinfo(info)
+        address, authkey = tasks_server_readinfo(info)[:2]
         assert address and authkey, 'One of address, authkey is missing'
     except Exception as E:
         print(str(E))
