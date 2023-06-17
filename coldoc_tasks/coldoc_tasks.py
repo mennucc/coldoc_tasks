@@ -85,7 +85,7 @@ except ImportError:
     lockfile = None
 
 
-python_default_tempdir = default_tempdir = tempfile.gettempdir()
+python_default_tempdir = tempfile.gettempdir()
 
 import logging
 logger = logging.getLogger(__name__)
@@ -383,9 +383,12 @@ def run_server(address, authkey, infofile, **kwargs):
     L.setLevel(logger.getEffectiveLevel())
     logger = L
     #
-    tempdir     = kwargs.pop('tempdir', default_tempdir)
+    default_tempdir = kwargs.pop('default_tempdir', python_default_tempdir)
+    tempdir     = kwargs.pop('tempdir', None)
     with_django = kwargs.pop('with_django', False)
     logfile     = kwargs.pop('logfile', None)
+    if tempdir is None:
+        tempdir = tempfile.mkdtemp(prefix='coldoc_tasks_', dir=default_tempdir)
     if logfile:
         h = logging.handlers.RotatingFileHandler(logfile, maxBytes=2 ** 16, backupCount=5)
         logger.addHandler(h)
@@ -615,8 +618,9 @@ def tasks_server_writeinfo(infofile, *args, **kwargs):
         sdb = []
     return write_config(infofile, kw, sdb)
 
-def __tasks_server_start_nolock(address, authkey, infofile, **kwargs):
-    tasks_server_writeinfo(infofile, address, authkey, os.getpid())
+def __tasks_server_start_nolock(infofile, address, authkey, **kwargs):
+    kwargs['pid'] = os.getpid()
+    tasks_server_writeinfo(infofile, address, authkey, **kwargs )
     ret = False
     try:
         ret = run_server(address, authkey, infofile, **kwargs)
@@ -624,15 +628,18 @@ def __tasks_server_start_nolock(address, authkey, infofile, **kwargs):
         logger.exception('When running task server')
     return ret
 
-def tasks_server_start(address, authkey, infofile, tempdir=default_tempdir, **kwargs):
+def tasks_server_start(infofile, address=None, authkey=None,
+                       tempdir=None, default_tempdir=python_default_tempdir, **kwargs):
     " start a server with `address` and `authkey` ,  saving info in `infofile (that is locked while in use)"
-    infofile, address, authkey, tempdir = _fix_parameters(infofile, address, authkey, tempdir)
+    infofile, address, authkey, tempdir = _fix_parameters(infofile, address, authkey, tempdir, default_tempdir)
     if lockfile:
         lock = lockfile.FileLock(infofile, timeout=2)
         with lock:
-            return __tasks_server_start_nolock(address, authkey, infofile, tempdir=tempdir, **kwargs)
+            return __tasks_server_start_nolock(infofile, address, authkey,
+                                               tempdir=tempdir, default_tempdir=default_tempdir, **kwargs)
     else:
-        return __tasks_server_start_nolock(address, authkey, infofile, tempdir=tempdir, **kwargs)
+        return __tasks_server_start_nolock(infofile, address, authkey,
+                                           tempdir=tempdir, default_tempdir=default_tempdir, **kwargs)
 
 
 def _read_django_settings(kwargs, settings):
@@ -640,7 +647,7 @@ def _read_django_settings(kwargs, settings):
     kwargs['address']     = getattr(settings, 'COLDOC_TASKS_SOCKET', None)
     kwargs['authkey']     = getattr(settings, 'COLDOC_TASKS_PASSWORD', None)
     kwargs['logfile']  = getattr(settings, 'COLDOC_TASKS_LOGFILE', None)
-    kwargs['tempdir']  = getattr(settings, 'COLDOC_TASKS_TEMPDIR', default_tempdir)
+    kwargs['default_tempdir']  = getattr(settings, 'COLDOC_TASKS_TEMPDIR', python_default_tempdir)
     kwargs['pythonpath'] = getattr(settings, 'COLDOC_TASKS_PYTHONPATH', tuple())
     kwargs['with_django'] = True
 
@@ -675,6 +682,10 @@ def _fix_parameters(infofile=None, sock=None, auth=None,
     if isinstance(infofile, (str, bytes, Path)):
         if  os.path.isfile(infofile):
             sock_, auth_, pid_, other_ = tasks_server_readinfo(infofile)
+            tempdir_ = other_.get('tempdir')
+            if tempdir and tempdir_ and tempdir != tempdir_:
+                logger.warning('Changing infofile tempdir  %r > %r ', tempdir_, tempdir)
+            tempdir = tempdir or tempdir_
             if sock and sock_ and sock != sock_:
                 logger.warning('Changing infofile  socket  %r > %r ', sock_, sock)
             sock = sock or sock_
@@ -725,7 +736,8 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
                            cwd=None,
                            logfile = None,
                            opt = None,
-                           tempdir = default_tempdir,
+                           tempdir = None,
+                           default_tempdir=python_default_tempdir,
                            timeout = 2.0,
                            force = False,
                            # this option is used to wrap this function for Django...
@@ -783,8 +795,8 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
         #
         logger.info('starting task server')
         #
-        infofile, address, authkey, tempdir = _fix_parameters(infofile, address, authkey, tempdir)
-        tasks_server_writeinfo(infofile, address, authkey)
+        infofile, address, authkey, tempdir = _fix_parameters(infofile, address, authkey, tempdir, default_tempdir)
+        tasks_server_writeinfo(infofile, address, authkey, tempdir=tempdir, logfile=logfile, pythonpath=pythonpath)
         #
         if use_multiprocessing:
             import multiprocessing
@@ -796,7 +808,7 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
             os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] =  'nocheck,noautostart'
             #
             proc = multiprocessing.Process(target=tasks_server_start,
-                                           args=(address, authkey, infofile))
+                                           args=(infofile, address, authkey))
             os.environ.pop('COLDOC_TASKS_AUTOSTART', None)
             if flag is None:
                 del os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS']
@@ -829,7 +841,7 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
                 env['PYTHONPATH'] = os.pathsep.join(pythonpath)
             if tempdir:
                 for j in ('TMPDIR', 'TEMP', 'TMP'):
-                    env[j] = str(tempdir)
+                    env[j] = str(default_tempdir)
             proc = subprocess.Popen(args, stdin=open(os.devnull), stdout=logfile_,
                                     env = env,
                                     stderr=subprocess.STDOUT, text=True,  cwd=cwd)
