@@ -394,7 +394,7 @@ def run_server(address, authkey, infofile, **kwargs):
                                                 prefix='server_', suffix='.log')
         logfile_f.write('Start log, pid %r\n' % os.getpid())
         logfile = logfile_f.name
-    elif logfile:
+    if logfile:
         h = logging.handlers.RotatingFileHandler(logfile, maxBytes=2 ** 16, backupCount=5)
         logger.addHandler(h)
     #
