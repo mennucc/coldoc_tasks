@@ -389,7 +389,12 @@ def run_server(address, authkey, infofile, **kwargs):
     logfile     = kwargs.pop('logfile', None)
     if tempdir is None:
         tempdir = tempfile.mkdtemp(prefix='coldoc_tasks_', dir=default_tempdir)
-    if logfile:
+    if logfile is True:
+        logfile_f = tempfile.NamedTemporaryFile(dir=tempdir, delete=False, mode='a',
+                                                prefix='server_', suffix='.log')
+        logfile_f.write('Start log, pid %r\n' % os.getpid())
+        logfile = logfile_f.name
+    elif logfile:
         h = logging.handlers.RotatingFileHandler(logfile, maxBytes=2 ** 16, backupCount=5)
         logger.addHandler(h)
     #
@@ -949,11 +954,11 @@ def main(argv):
         address = argv[2].encode() if len(argv) > 2 else None
         authkey = argv[3].encode() if len(argv) > 3 else None
         if argv[0] == 'start':
-            return tasks_server_start(address=address, authkey=authkey, infofile=info)
+            return tasks_server_start(infofile=info, address=address, authkey=authkey, logfile=True)
         else:
             # re-enable starting daemon
             os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] =  ''
-            return tasks_daemon_autostart(infofile=info, address=address, authkey=authkey)
+            return tasks_daemon_autostart(infofile=info, address=address, authkey=authkey, logfile=True)
     #
     try:
         address, authkey = tasks_server_readinfo(info)[:2]
