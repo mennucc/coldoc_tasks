@@ -939,8 +939,7 @@ def main(argv):
             logger.error('This command needs that `COLDOC_TASKS_INFOFILE` be defined in `settings`')
             return False
         if argv[0] ==  'django_start_with':
-            address, authkey = tasks_server_readinfo(info)[:2]
-            return tasks_server_start(address=address, authkey=authkey, infofile= info, with_django=True)
+            return tasks_server_start(infofile=info, with_django=True)
         if argv[0] ==  'django_start':
             return tasks_django_server_start(settings, infofile= info)
         #
@@ -960,6 +959,9 @@ def main(argv):
             os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] =  ''
             return tasks_daemon_autostart(infofile=info, address=address, authkey=authkey, logfile=True)
     #
+    if argv[0] == 'start_with':
+        return tasks_server_start(infofile=info)
+    #
     try:
         address, authkey = tasks_server_readinfo(info)[:2]
         assert address and authkey, 'One of address, authkey is missing'
@@ -967,15 +969,8 @@ def main(argv):
         print(str(E))
         return False
     #
-    if argv[0] == 'start_with':
-        #
-        if not authkey:
-            # currently not reached
-            authkey = os.urandom(8)
-        #
-        return tasks_server_start(address=address, authkey=authkey, infofile= info)
     #
-    elif  'ping' == argv[0]:
+    if  'ping' == argv[0]:
         z = ping(address, authkey)
         print(z)
         return z
