@@ -667,7 +667,7 @@ def task_server_check(info):
     if os.path.isfile(info):
         sock, auth, pid = tasks_server_readinfo(info)[:3]
         if not( sock and auth):
-            logger.error('One of address, authkey is missing from %r',info)
+            logger.info('One of address, authkey is missing from %r',info)
             return False, sock, auth, pid
         if psutil and pid and not psutil.pid_exists(pid):
             logger.warning('Tasks server pid %r does not exist', pid)
@@ -866,7 +866,7 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
 
 def tasks_daemon_django_autostart(settings, **kwargs):
     """ Check (using information from `settings` module) if there is a server running;
-    if there is, return the PID,      if not, start it (as a subprocess), and return the process.
+    if there is, return `(PID, info)`,      if not, start it (as a subprocess), and return the `(proc, info)`.
     For keyword arguments, see `tasks_daemon_autostart`.
       """
     _read_django_settings(kwargs, settings)
@@ -889,7 +889,7 @@ def tasks_server_join(proc):
     elif hasattr(proc, 'wait'):
         proc.wait()
     else:
-        logger.warning("should wait for process %r", proc)
+        logger.warning("Don't know how to wait for process %r", proc)
 
 
 
