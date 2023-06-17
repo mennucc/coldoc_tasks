@@ -84,7 +84,7 @@ except ImportError:
     lockfile = None
 
 
-default_tempdir = tempfile.gettempdir()
+python_default_tempdir = default_tempdir = tempfile.gettempdir()
 
 import logging
 logger = logging.getLogger(__name__)
@@ -669,27 +669,55 @@ def task_server_check(info):
 
 
 def _fix_parameters(infofile=None, sock=None, auth=None,
-                    tempdir = default_tempdir):
-    ok = sock_ = auth_ = pid_ = mytempdir = None
+                    tempdir=None, default_tempdir=python_default_tempdir):
+    #
     if isinstance(infofile, (str, bytes, Path)):
         if  os.path.isfile(infofile):
             sock_, auth_, pid_ = tasks_server_readinfo(infofile)
-    else:
-        if infofile is not None:
-            logger.warning('Unsupported type for infofile: %r', infofile)
-        # TODO FIXME this temporary subdir should be deleted on end
-        mytempdir = tempfile.mkdtemp(prefix='coldoc_tasks_', dir=tempdir)
-        infofile = os.path.join(mytempdir, 'infofile')
-    sock = sock or sock_
-    if sock is None:
-        if mytempdir is None:
-            mytempdir = tempfile.mkdtemp(prefix='coldoc_tasks_', dir=tempdir)
-        sock = os.path.join(mytempdir, 'socket')
-    auth = auth or auth_ or os.urandom(10)
-    mytempdir = mytempdir or tempdir
+            if sock and sock_ and sock != sock_:
+                logger.warning('Changing infofile  socket  %r > %r ', sock_, sock)
+            sock = sock or sock_
+            if auth and auth_ and auth != auth_:
+                logger.warning('Changing infofile  authkey')
+            auth = auth or auth_
+    elif infofile is not None:
+        logger.warning('Unsupported type for infofile: %r', infofile)
+    #
+    ok = False
+    try:
+        if tempdir is not None:
+            ok = os.path.isdir(tempdir)
+            if hasattr(os, 'access'):
+                ok = ok and os.access(tempdir, os.R_OK | os.W_OK)
+            if hasattr(os, 'getuid'):
+                s = os.stat(tempdir)
+                ok = ok and (s.st_uid == os.getuid())
+    except OSError:
+        ok = False
+    if tempdir is None or not ok:
+        newtempdir = tempfile.mkdtemp(prefix='coldoc_tasks_', dir=default_tempdir)
+        if tempdir:
+            logger.warning('tempdir not available changine  %r -> %r ', tempdir, newtempdir)
+        tempdir = newtempdir
+    #
+    if infofile is None:
+        infofile = os.path.join(tempdir, 'infofile')
+    #
+    ok = False
+    if sock is not None:
+        d = os.path.dirname(sock)
+        ok = os.path.isdir(d) and d.startswith(tempdir)
+    if not ok:
+        newsock = os.path.join(tempdir, 'socket')
+        if sock:
+            logger.warning('Changing socket  %r -> %r , wrong directory', sock, newsock)
+        sock = newsock
+    #
+    auth = auth or os.urandom(10)
+    #
     assert isinstance(sock, (str, bytes, Path))
     assert isinstance(auth, bytes)
-    return infofile, sock, auth, mytempdir
+    return infofile, sock, auth, tempdir
 
 def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
                            pythonpath=(),
