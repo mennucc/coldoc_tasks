@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 run this as
 $ python3 unittests/test_fork.py
@@ -17,8 +19,9 @@ logger = logging.getLogger(__name__)
 testdir = os.path.dirname(os.path.realpath(__file__))
 sourcedir = os.path.dirname(testdir)
 
-sys.path.insert(0, sourcedir)
-#sys.path.append(osjoin(sourcedir,'coldoc_tasks'))
+if __name__ == '__main__':
+    if sourcedir not in sys.path:
+        sys.path.insert(0, sourcedir)
 
 try:
     import celery
@@ -106,7 +109,7 @@ class TestForkColDoc(Base,unittest.TestCase):
         #
         if 1: 
             logfile = tempfile.NamedTemporaryFile()
-            cls.proc = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(cls.infofile, cls.address, cls.authkey, 
+            cls.proc, info_ = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(cls.infofile, cls.address, cls.authkey, 
                                                                     tempdir=cls.tempdir,
                                                                     logfile=logfile.name,
                                                                     pythonpath=(sourcedir,testdir),
