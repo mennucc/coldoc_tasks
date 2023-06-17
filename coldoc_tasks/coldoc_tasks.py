@@ -87,7 +87,7 @@ except ImportError:
 
 python_default_tempdir = tempfile.gettempdir()
 
-import logging
+import logging, logging.handlers
 logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
