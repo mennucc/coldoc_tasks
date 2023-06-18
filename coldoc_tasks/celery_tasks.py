@@ -222,6 +222,7 @@ def run_server(celeryconfig=None, with_django=None):
     " start Celery server "
     if with_django and celeryconfig is None:
         os.environ.setdefault('DJANGO_SETTINGS_MODULE', with_django)
+        os.environ.pop('COLDOC_TASKS_AUTOSTART', None)
         import django
         django.setup()
         from django.conf import settings
