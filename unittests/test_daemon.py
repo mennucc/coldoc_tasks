@@ -20,18 +20,11 @@ testdir = os.path.dirname(os.path.realpath(__file__))
 sourcedir = os.path.dirname(testdir)
 
 
-
-try:
-    import celery
-except ImportError:
-    logger.error('Cannot import `celery`')
-    celery = None
-
 if __name__ == '__main__':
     if sourcedir not in sys.path:
         sys.path.insert(0, sourcedir)
 
-import coldoc_tasks.simple_tasks, coldoc_tasks.coldoc_tasks, coldoc_tasks.celery_tasks
+import coldoc_tasks.simple_tasks, coldoc_tasks.coldoc_tasks
 
 class TestDaemon(unittest.TestCase):
     #
@@ -41,6 +34,10 @@ class TestDaemon(unittest.TestCase):
         proc, info_ = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(infofile=info, logfile=True)
         self.assertTrue( proc )
         address, authkey = coldoc_tasks.coldoc_tasks.tasks_server_readinfo(info)[:2]
+        #
+        err = coldoc_tasks.coldoc_tasks.test(address, authkey)
+        self.assertTrue(err == 0)
+        #
         coldoc_tasks.coldoc_tasks.shutdown(address, authkey)
         coldoc_tasks.task_utils.proc_join(proc)
 
