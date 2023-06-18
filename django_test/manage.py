@@ -2,6 +2,21 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+from os.path import dirname, realpath
+
+try:
+    import coldoc_tasks
+except ImportError:
+    coldoc_tasks = None
+
+if coldoc_tasks is None:
+    source_dir = dirname(dirname(realpath(__file__)))
+    if source_dir not in sys.path:
+        sys.stderr.write('(** Cannot import coldoc_tasks, tweaking the sys.path)\n')
+        sys.path.insert(0, source_dir)
+    else:
+        sys.stderr.write('** Cannot import coldoc_tasks!\n')
+        sys.exit(1)
 
 
 def main():
