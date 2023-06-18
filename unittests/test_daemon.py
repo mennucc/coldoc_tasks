@@ -42,7 +42,7 @@ class TestDaemon(unittest.TestCase):
         self.assertTrue( proc )
         address, authkey = coldoc_tasks.coldoc_tasks.tasks_server_readinfo(info)[:2]
         coldoc_tasks.coldoc_tasks.shutdown(address, authkey)
-        coldoc_tasks.coldoc_tasks.tasks_server_join(proc)
+        coldoc_tasks.task_utils.proc_join(proc)
 
 
 if __name__ == '__main__':

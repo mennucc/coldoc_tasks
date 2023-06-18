@@ -10,6 +10,12 @@ try:
 except ImportError:
     celery = None
 
+
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
 ####
 
 default_chmod = 0o600
@@ -156,6 +162,23 @@ def _read_config(infofile):
         except Exception as E:
             logger.warning('In info file %r error parsing  %r : %r', infofile, line, E)
     return db, sdb
+
+####
+
+def proc_join(proc):
+    " join, that is, wait for subprocess to end; to be used after `shutdown` is called, to avoid zombies"
+    if isinstance(proc, int):
+        if psutil:
+            if psutil.pid_exists(proc):
+                os.wait(proc)
+    elif hasattr(proc, 'join'):
+        proc.join()
+    elif hasattr(proc, 'wait'):
+        proc.wait()
+    else:
+        logger.warning("Don't know how to wait for process %r", proc)
+
+
 
 ####
 

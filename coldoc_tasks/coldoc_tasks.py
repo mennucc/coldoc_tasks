@@ -100,7 +100,7 @@ if __name__ == '__main__':
     
 
 from coldoc_tasks.simple_tasks import fork_class_base
-from coldoc_tasks.task_utils import _normalize_pythonpath, mychmod
+from coldoc_tasks.task_utils import _normalize_pythonpath, mychmod, proc_join
 from coldoc_tasks.task_utils import read_config, write_config
 from coldoc_tasks.exceptions import *
 
@@ -877,19 +877,6 @@ def tasks_daemon_django_autostart(settings, **kwargs):
         settings.COLDOC_TASKS_COLDOC_PROC = proc
         settings.COLDOC_TASKS_INFOFILE = info
     return proc, info
-
-def tasks_server_join(proc):
-    " join, that is, wait for subprocess to end; to be used after `shutdown` is called, to avoid zombies"
-    if isinstance(proc, int):
-        if psutil:
-            if psutil.pid_exists(proc):
-                os.wait(proc)
-    elif hasattr(proc, 'join'):
-        proc.join()
-    elif hasattr(proc, 'wait'):
-        proc.wait()
-    else:
-        logger.warning("Don't know how to wait for process %r", proc)
 
 
 

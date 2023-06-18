@@ -135,7 +135,7 @@ class TestForkColDoc(Base,unittest.TestCase):
     def tearDownClass(cls):
         # remove 
         coldoc_tasks.coldoc_tasks.shutdown(cls.address, cls.authkey)
-        coldoc_tasks.coldoc_tasks.tasks_server_join(cls.proc)
+        coldoc_tasks.task_utils.proc_join(cls.proc)
 
 
     def test_direct_run_cmd(self):
