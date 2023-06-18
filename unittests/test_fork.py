@@ -106,12 +106,12 @@ class TestForkColDoc(Base,unittest.TestCase):
         cls.authkey = os.urandom(9)
         cls.logger = logging.getLogger('coldoc_tasks')
         cls.infofile = osjoin(T,'info')
+        cls.logfile = tempfile.NamedTemporaryFile(prefix='coldoc_log_', delete=False)
         #
         if 1: 
-            logfile = tempfile.NamedTemporaryFile()
             cls.proc, info_ = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(cls.infofile, cls.address, cls.authkey, 
                                                                     tempdir=cls.tempdir,
-                                                                    logfile=logfile.name,
+                                                                    logfile=cls.logfile.name,
                                                                     pythonpath=(sourcedir,testdir),
                                                                     )
             if not cls.proc:
@@ -136,6 +136,8 @@ class TestForkColDoc(Base,unittest.TestCase):
         # remove 
         coldoc_tasks.coldoc_tasks.shutdown(cls.address, cls.authkey)
         coldoc_tasks.task_utils.proc_join(cls.proc)
+        cls.logfile.close()
+        os.unlink(cls.logfile.name)
 
 
     def test_direct_run_cmd(self):
@@ -154,7 +156,7 @@ class TestForkCelery(Base,unittest.TestCase):
     def setUpClass(cls):
         assert celery is not None
         cls.logger = logging.getLogger('celery_tasks')
-        cls.logfile = tempfile.NamedTemporaryFile(delete=False)
+        cls.logfile = tempfile.NamedTemporaryFile(prefix='celery_log_', delete=False)
         cls.celeryconfig = os.path.join(sourcedir,'etc','celeryconfig.py')
         cls.proc = coldoc_tasks.celery_tasks.tasks_daemon_autostart(cls.celeryconfig,
                                                                     logfile=cls.logfile.name,
@@ -169,13 +171,9 @@ class TestForkCelery(Base,unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         # remove
-        app = coldoc_tasks.celery_tasks.get_client(cls.celeryconfig)
-        app.control.shutdown()
-        if cls.proc is not True and hasattr(cls.proc,'pid'):
-            try:
-                os.kill(cls.proc.pid, signal.SIGTERM)
-            except Exception as E:
-                logger.warning('Cannot kill %r, %r', cls.proc.pid , E)
+        coldoc_tasks.celery_tasks.shutdown(cls.celeryconfig)
+        coldoc_tasks.task_utils.proc_join(cls.proc)
+        cls.logfile.close()
         os.unlink(cls.logfile.name)
 
 

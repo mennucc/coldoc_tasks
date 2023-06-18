@@ -91,7 +91,8 @@ def _get_client(celeryconfig_, mtime = None):
     """
     if isinstance(celeryconfig_,str):
         if os.path.isfile(celeryconfig_):
-            celeryconfig = import_module_from_string('celeryconfig', open(celeryconfig_).read())
+            with open(celeryconfig_) as F:
+                celeryconfig = import_module_from_string('celeryconfig', F.read())
             ## this sucks
             #s = sys.path
             #sys.path = [ os.path.dirname(celeryconfig_) ]
@@ -340,9 +341,11 @@ def tasks_daemon_autostart(celeryconfig,
             if tempdir:
                 for j in ('TMPDIR', 'TEMP', 'TMP'):
                     env[j] = str(tempdir)
-            proc = subprocess.Popen(args, stdin=open(os.devnull), stdout=logfile_,
+            devnull = open(os.devnull)
+            proc = subprocess.Popen(args, stdin=devnull, stdout=logfile_,
                                     env = env,
                                     stderr=subprocess.STDOUT, text=True,  cwd=cwd)
+            devnull.close()
         # check it
         ok = server_wait(celeryconfig,timeout)
         if not ok:

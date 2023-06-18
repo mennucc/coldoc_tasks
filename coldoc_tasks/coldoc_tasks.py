@@ -850,9 +850,11 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
             if tempdir:
                 for j in ('TMPDIR', 'TEMP', 'TMP'):
                     env[j] = str(default_tempdir)
-            proc = subprocess.Popen(args, stdin=open(os.devnull), stdout=logfile_,
+            devnull = open(os.devnull)
+            proc = subprocess.Popen(args, stdin=devnull, stdout=logfile_,
                                     env = env,
                                     stderr=subprocess.STDOUT, text=True,  cwd=cwd)
+            devnull.close()
         # check it
         ok = server_wait(address, authkey,timeout)
         if ok:
