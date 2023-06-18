@@ -350,7 +350,7 @@ def test(address, authkey):
         f = FC()
         f.run(__countthem)
         print('---- test of reading the Django database: there are %r DMetadata objects' % f.wait())
-    return ret
+    return err
 
 
 ############## server code
