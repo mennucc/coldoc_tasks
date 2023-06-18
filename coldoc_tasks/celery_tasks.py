@@ -125,6 +125,11 @@ def celery_server_check(celeryconfig_):
 
 ping = celery_server_check
 
+def shutdown(celeryconfig_):
+    app = get_client(celeryconfig_)
+    return app.control.shutdown()
+
+stop = shutdown
 
 def status(celeryconfig_):
     app = get_client(celeryconfig_)
@@ -405,9 +410,8 @@ def main(argv):
         else:
             assert False
         return True
-    elif  argv[0] in ('shutdown', 'stop_daemon') :
-        app = get_client(argv[1])
-        return app.control.shutdown()
+    elif  argv[0] in ('shutdown', 'stop') :
+        return shutdown(argv[1])
     else:
         print(__doc__)
         return False
