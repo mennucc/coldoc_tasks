@@ -25,7 +25,13 @@ pushd $t
 
 flake8 .  --select=E9,F63,F7,F82
 
-pytest
+for s in unittests/*py ; do
+    if test -x "$s" ; then
+	$s -v
+    fi
+done
+
+# I hate pytest
 
 echo You should: rm -fr "$t"
 
