@@ -40,7 +40,7 @@ class fork_class_base(object):
 class fork_class(fork_class_base):
     "class that runs a job in a forked subprocess, and returns results or raises exception"
     fork_type = 'simple'
-    def __init__(self, use_fork = True):
+    def __init__(self, use_fork = True, timeout=None):
         super().__init__(use_fork = use_fork)
         self.tempfile_name = None
         self.__my_pid    = os.getpid()
@@ -50,6 +50,8 @@ class fork_class(fork_class_base):
         self.__pickle_exception = None
         # __del__ methods may be run after modules are gc
         self.os_unlink = os.unlink
+        #
+        self.__timeout = timeout
     #
     @staticmethod
     def can_fork():
@@ -108,6 +110,7 @@ class fork_class(fork_class_base):
                 self.__ret = (1, e)
         self.already_run = True
     def wait(self, timeout=None):
+        timeout = self.__timeout if timeout is None else timeout
         assert self.already_run is True
         if self.use_fork_ and not self.already_wait:
             a = [('fork_class, cmd %r pid %r.' % (self.__cmd, self.__other_pid))]
@@ -169,7 +172,7 @@ class fork_class(fork_class_base):
 class nofork_class(fork_class_base):
     "class that runs a job as usual, and returns results or raises exception"
     fork_type = 'nofork'
-    def __init__(self, use_fork = True):
+    def __init__(self, use_fork = True, timeout=None):
         super().__init__(use_fork = use_fork)
         self.__ret = (2 , RuntimeError('Program bug') )
         self.__pickle_exception = None

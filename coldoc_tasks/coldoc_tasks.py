@@ -249,13 +249,15 @@ def join(id_, manager):
 class fork_class(fork_class_base):
     "class that runs a job in a subprocess, and returns results or raises exception"
     fork_type = 'coldoc'
-    def __init__(self, address, authkey, use_fork = True):
+    def __init__(self, address, authkey, use_fork = True, timeout=None):
         super().__init__(use_fork = use_fork )
         self.__cmd_id = None
         self.__ret = (2, RuntimeError('This should not happen'))
         self.__manager = None
         self.__address = address
         self.__authkey = authkey
+        #
+        self.__timeout = None
     #
     def __getstate__(self):
         self.__manager = None
@@ -288,6 +290,7 @@ class fork_class(fork_class_base):
             self.__manager.terminate__(self.__cmd_id)
     #
     def wait(self, timeout=None):
+        timeout = self.__timeout if timeout is None else timeout
         if timeout is not None:
             logger.warning('Timeout not implemented')
         assert self.already_run
