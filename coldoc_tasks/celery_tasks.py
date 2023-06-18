@@ -131,6 +131,10 @@ def shutdown(celeryconfig_):
 
 stop = shutdown
 
+def test(celeryconfig_):
+    from coldoc_tasks.task_utils import test_fork
+    FC = functools.partial(fork_class, celeryconfig=celeryconfig_)
+    return test_fork(fork_class=FC)
 def status(celeryconfig_):
     app = get_client(celeryconfig_)
     #https://stackoverflow.com/a/53856001/5058564
@@ -375,9 +379,7 @@ def main(argv):
         return ret
     #
     elif 'test' == argv[0]:
-        from coldoc_tasks.task_utils import test_fork
-        FC = functools.partial(fork_class, celeryconfig=argv[1])
-        ret = test_fork(fork_class=FC)
+        ret = test(argv[1])
         if os.environ.get('DJANGO_SETTINGS_MODULE') == 'ColDocDjango.settings':
             f = FC()
             f.run(__countthem)
