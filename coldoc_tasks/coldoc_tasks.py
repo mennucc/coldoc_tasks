@@ -593,9 +593,10 @@ def run_server(address, authkey, infofile, **kwargs):
 def server_wait(address, authkey, timeout = 2.0):
     " try pinging, up to timeout"
     ok = False
+    t = time.time() + timeout
     for j in range(int(float(timeout) * 20.)):
         ok = ping(address, authkey, warn=False)
-        if ok: break
+        if ok or (time.time() > t): break
         time.sleep(0.05)
     return ok
 

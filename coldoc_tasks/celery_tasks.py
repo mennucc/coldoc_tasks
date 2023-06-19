@@ -115,11 +115,11 @@ def _get_client(celeryconfig_, mtime = None):
 ############# status
 
 
-def celery_server_check(celeryconfig_):
+def celery_server_check(celeryconfig_, timeout=0.1):
     if not celery:
         return False
     app = get_client(celeryconfig_)
-    i = app.control.inspect()
+    i = app.control.inspect(timeout=timeout)
     if not i.ping():
         return False
     return True
@@ -253,9 +253,10 @@ def run_server(celeryconfig=None, with_django=None):
 def server_wait(celeryconfig, timeout = 2.0):
     " try pinging, up to timeout"
     ok = False
+    t = time.time() + timeout
     for j in range(int(float(timeout) * 20.)):
-        ok = ping(celeryconfig)
-        if ok: break
+        ok = ping(celeryconfig, timeout=0.05)
+        if ok or (time.time() > t) : break
         time.sleep(0.05)
     return ok
 
