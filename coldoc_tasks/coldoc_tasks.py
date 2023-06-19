@@ -576,7 +576,7 @@ def run_server(address, authkey, infofile, **kwargs):
         return_code = False
     try:
         logger.info('Shutting down')
-        for id_  in processes.keys():
+        for id_  in list(processes.keys()):
             join__(id_)
         if pool:
             pool.close()
