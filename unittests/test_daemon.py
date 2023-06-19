@@ -40,7 +40,8 @@ class TestDaemon(unittest.TestCase):
         #
         coldoc_tasks.coldoc_tasks.shutdown(address, authkey)
         coldoc_tasks.task_utils.proc_join(proc)
-
+        t.close()
+        os.unlink(t.name)
 
 if __name__ == '__main__':
     unittest.main()

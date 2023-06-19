@@ -106,7 +106,7 @@ class TestForkColDoc(Base,unittest.TestCase):
         cls.authkey = os.urandom(9)
         cls.logger = logging.getLogger('coldoc_tasks')
         cls.infofile = osjoin(T,'info')
-        cls.logfile = tempfile.NamedTemporaryFile(prefix='coldoc_log_', delete=False)
+        cls.logfile = tempfile.NamedTemporaryFile(prefix='coldoc_log_', delete=False, dir=T)
         #
         if 1: 
             cls.proc, info_ = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(cls.infofile, cls.address, cls.authkey, 
@@ -137,7 +137,8 @@ class TestForkColDoc(Base,unittest.TestCase):
         coldoc_tasks.coldoc_tasks.shutdown(cls.address, cls.authkey)
         coldoc_tasks.task_utils.proc_join(cls.proc)
         cls.logfile.close()
-        os.unlink(cls.logfile.name)
+        shutil.rmtree(cls.tempdir)
+
 
 
     def test_direct_run_cmd(self):
