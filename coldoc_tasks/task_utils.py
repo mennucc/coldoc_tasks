@@ -179,7 +179,7 @@ def proc_join(proc):
     if isinstance(proc, int):
         if psutil:
             if psutil.pid_exists(proc):
-                os.wait(proc)
+                os.waitpid(proc, 0)
     elif hasattr(proc, 'join'):
         proc.join()
     elif hasattr(proc, 'wait'):
