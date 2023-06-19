@@ -52,7 +52,6 @@ class TestDjangoDaemon(unittest.TestCase):
         if a not in pp:
             pp = [a] + pp
         os.environ['PYTHONPATH'] = os.pathsep.join(pp)
-        os.environ['PYTHONPATH'] = a
         if a not in sys.path :
             sys.path.insert(0, a)
         os.environ['DJANGO_SETTINGS_MODULE'] = 'django_test.settings'
