@@ -171,7 +171,7 @@ def __socket_server(socket_, access_pair, rets, id_):
 
 
 
-def __send_message(m, F):
+def __send_message(m, F, timeout=None):
     assert isinstance(m,bytes) and len(m) == 5
     # unpack auth from access_pair definition
     F, auth = F
@@ -182,6 +182,8 @@ def __send_message(m, F):
         return None
     ret = False
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+        if timeout:
+            s.settimeout(timeout)
         s.connect(F)
         a = s.recv(5)
         if a == b'#AUTH':
@@ -224,7 +226,7 @@ def wait(id_, manager):
     if F is not None:
         return __send_message(b'#WAIT', F)
 
-def get_result(id_, manager):
+def get_result(id_, manager, timeout=None):
     """ get command result , as a pair (status, result),
       where status is 0 or 1, 
       if status is 0, result is the result
@@ -233,7 +235,7 @@ def get_result(id_, manager):
     F = manager.get_wait_socket__(id_)
     F = F._getvalue()
     if F is not None:
-        return __send_message(b'#SEND', F)
+        return __send_message(b'#SEND', F, timeout)
     return None
 
 def join(id_, manager):
@@ -291,18 +293,18 @@ class fork_class(fork_class_base):
     #
     def wait(self, timeout=None):
         timeout = self.__timeout if timeout is None else timeout
-        if timeout is not None:
-            logger.warning('Timeout not implemented')
         assert self.already_run
         if self.use_fork_ and not self.already_wait:
             if self.__manager is None:
                 self.__manager = get_manager(self.__address, self.__authkey)
             self.already_wait = True
             try:
-                self.__ret = get_result(self.__cmd_id, self.__manager)
+                self.__ret = get_result(self.__cmd_id, self.__manager, timeout=timeout)
                 if self.__ret is None:
                     raise ColdocTasksTimeoutError('Process has disappeared: %s',self.__cmd_id)
                 self.__manager.join__(self.__cmd_id)
+            except socket.timeout as E:
+                raise ColdocTasksTimeoutError('timeout on %r : %r' % (self.__cmd_id, E) )
             except Exception as E:
                 raise RuntimeError('Process %r exception on wait : %r' % ( self.__cmd_name, E) )
         if self.__ret[0] :

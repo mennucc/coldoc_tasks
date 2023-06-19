@@ -33,6 +33,7 @@ import coldoc_tasks.simple_tasks, coldoc_tasks.coldoc_tasks, coldoc_tasks.celery
 
 
 from coldoc_tasks.task_utils import __fork_reentrat_test as fork_reentrat_test
+from coldoc_tasks.exceptions import ColdocTasksTimeoutError
 
 from fakejobs import *
 
@@ -139,6 +140,11 @@ class TestForkColDoc(Base,unittest.TestCase):
         cls.logfile.close()
         shutil.rmtree(cls.tempdir)
 
+    def test_timeout(self):
+        f = self.fork_class()
+        f.run(time.sleep, 3)
+        with self.assertRaises(ColdocTasksTimeoutError):
+            r = f.wait(timeout=1.)
 
 
     def test_direct_run_cmd(self):
@@ -176,6 +182,12 @@ class TestForkCelery(Base,unittest.TestCase):
         coldoc_tasks.task_utils.proc_join(cls.proc)
         cls.logfile.close()
         os.unlink(cls.logfile.name)
+
+    def test_timeout(self):
+        f = self.fork_class()
+        f.run(time.sleep, 3)
+        with self.assertRaises(ColdocTasksTimeoutError):
+            r = f.wait(timeout=1.)
 
 
 if __name__ == '__main__':
