@@ -176,7 +176,10 @@ def _read_config(infofile):
 
 def proc_join(proc):
     " join, that is, wait for subprocess to end; to be used after `shutdown` is called, to avoid zombies"
-    if isinstance(proc, int):
+    if isinstance(proc, bool):
+        # FIXME in Celery, if the process is running, we don't know its PID
+        logger.warning("Don't know the true process id, can't wait")
+    elif isinstance(proc, int):
         if psutil:
             if psutil.pid_exists(proc):
                 os.waitpid(proc, 0)
