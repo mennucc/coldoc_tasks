@@ -388,10 +388,10 @@ def run_server(address, authkey, infofile, **kwargs):
     L.setLevel(logger.getEffectiveLevel())
     logger = L
     #
-    default_tempdir = kwargs.pop('default_tempdir', python_default_tempdir)
-    tempdir     = kwargs.pop('tempdir', None)
-    with_django = kwargs.pop('with_django', False)
-    logfile     = kwargs.pop('logfile', None)
+    default_tempdir = kwargs.get('default_tempdir', python_default_tempdir)
+    tempdir     = kwargs.get('tempdir', None)
+    with_django = kwargs.get('with_django', False)
+    logfile     = kwargs.get('logfile', None)
     if tempdir is None:
         tempdir = tempfile.mkdtemp(prefix='coldoc_tasks_', dir=default_tempdir)
     if logfile is True:
@@ -399,6 +399,7 @@ def run_server(address, authkey, infofile, **kwargs):
                                                 prefix='server_', suffix='.log')
         logfile_f.write('Start log, pid %r\n' % os.getpid())
         logfile = logfile_f.name
+        kwargs['logfile'] = logfile
     if logfile:
         h = logging.handlers.RotatingFileHandler(logfile, maxBytes=2 ** 16, backupCount=5)
         logger.addHandler(h)
@@ -574,10 +575,13 @@ def run_server(address, authkey, infofile, **kwargs):
     except Exception:
         logger.exception('in run_server')
         return_code = False
+    
     try:
         logger.info('Shutting down')
+        kwargs['processes'] = processes
         for id_  in list(processes.keys()):
             join__(id_)
+        kwargs.pop('processes', None)
         if pool:
             pool.close()
             pool.join()
@@ -631,7 +635,7 @@ def tasks_server_writeinfo(infofile, *args, **kwargs):
             db, sdb = read_config(infofile)
         else:
             sdb = []
-        ret = write_config(infofile, kw, sdb)
+        ret = write_config(infofile, kw, sdb, rewrite_old=True)
     return ret
 
 def __tasks_server_start_nolock(infofile, address, authkey, **kwargs):
@@ -642,6 +646,8 @@ def __tasks_server_start_nolock(infofile, address, authkey, **kwargs):
         ret = run_server(address, authkey, infofile, **kwargs)
     except:
         logger.exception('When running task server')
+    del kwargs['pid']
+    tasks_server_writeinfo(infofile, address, authkey, **kwargs )
     return ret
 
 def tasks_server_start(infofile, address=None, authkey=None,
