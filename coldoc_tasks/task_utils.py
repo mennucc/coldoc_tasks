@@ -71,6 +71,8 @@ def write_config(infofile, db, sdb=[], rewrite_old = False):
                 F.write('%s/64s=%s\n' % (k, v) )
             else:
                 F.write('%s=%s\n' % (k,v))
+        elif isinstance(v, bool) or v is None:
+            F.write('%s/r=%r\n'% (k,v))
         elif isinstance(v,int):
             F.write('%s/i=%d\n'% (k,v))
         elif isinstance(v,float):

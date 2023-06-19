@@ -32,11 +32,14 @@ example_db = {
     'texto' : 'hi\n how are you\n',
     'byteo' : b'there',
     'typo' : TU.choose_best_fork_class,
+    'bolleo1' : True,
+    'nonno' : None,
 }
 
 
 exampleconfig = """
 into/i=123456
+nonne/r=None
 # comment
 
 floato/f=3.141
