@@ -372,24 +372,24 @@ def test_fork(fork_class):
     if ret:
         print(' ** skipping speed test, already errors')
     else:
-        N = 64
+        N = 256
         t = time.time()
         print("======= speed test instances = %d " %(N,))
         print("== scheduling")
         ff = list(range(N))
         for j in range(N):
-            sys.stderr.write('\r %d  \r' % (j,))
+            #sys.stderr.write('\r %d  \r' % (j,))
             ff[j] = fork_class()
             ff[j].run(int,'4')
         print("== scheduling , time per instance %g sec" % ((time.time() - t) / N))
         print("== waiting")
         for j in range(N):
-            sys.stderr.write('\r %d  \r' % (j,))
+            #sys.stderr.write('\r %d  \r' % (j,))
             r = ff[j].wait()
             if r != 4:
                 ret += 1
         t = time.time() - t
-        print("======= speed test, time per instance %g sec " %(t / N,))
+        print("======= speed test, fork_type %r, total time per instance %g sec " % (ff[0].fork_type, t / N,))
     #
     if f.use_fork and hasattr(fork_class,'terminate'):
         print("==== test : terminate subprocess")
