@@ -1,4 +1,4 @@
-import sys, os, time, pickle, functools, time, base64, copy
+import sys, os, time, pickle, functools, time, base64, copy, contextlib
 from os.path import join as osjoin
 from pathlib import Path
 
@@ -10,11 +10,20 @@ try:
 except ImportError:
     celery = None
 
-
 try:
     import psutil
 except ImportError:
     psutil = None
+
+def mylockfile(fil, timeout=None):
+    " fake lockfile context "
+    return contextlib.nullcontext
+
+try:
+    import lockfile
+    mylockfile = lockfile.FileLock
+except ImportError:
+    pass
 
 ####
 

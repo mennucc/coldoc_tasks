@@ -100,7 +100,7 @@ if __name__ == '__main__':
     
 
 from coldoc_tasks.simple_tasks import fork_class_base
-from coldoc_tasks.task_utils import _normalize_pythonpath, mychmod, proc_join
+from coldoc_tasks.task_utils import _normalize_pythonpath, mychmod, proc_join, mylockfile
 from coldoc_tasks.task_utils import read_config, write_config
 from coldoc_tasks.exceptions import *
 
@@ -607,7 +607,9 @@ infofile_keywords = ('address', 'authkey', 'pid')
 def tasks_server_readinfo(infofile):
     "returns  (address, authkey, pid, dict_of_other_options)"
     ret = [None] * (1+ len(infofile_keywords) )
-    db, sdb = read_config(infofile)
+    lock = mylockfile(infofile+'-rw')
+    with lock:
+        db, sdb = read_config(infofile)
     for n,k in enumerate(infofile_keywords):
         if k in db:
             ret [ n ] = db.pop(k)
@@ -621,11 +623,14 @@ def tasks_server_writeinfo(infofile, *args, **kwargs):
         v = args[j]
         kw[k] = v
     # we preserve the file structure
-    if infofile and os.path.exists(infofile):
-        db, sdb = read_config(infofile)
-    else:
-        sdb = []
-    return write_config(infofile, kw, sdb)
+    lock = mylockfile(infofile+'-rw')
+    with lock:
+        if infofile and os.path.exists(infofile):
+            db, sdb = read_config(infofile)
+        else:
+            sdb = []
+        ret = write_config(infofile, kw, sdb)
+    return ret
 
 def __tasks_server_start_nolock(infofile, address, authkey, **kwargs):
     kwargs['pid'] = os.getpid()
@@ -641,12 +646,8 @@ def tasks_server_start(infofile, address=None, authkey=None,
                        tempdir=None, default_tempdir=python_default_tempdir, **kwargs):
     " start a server with `address` and `authkey` ,  saving info in `infofile (that is locked while in use)"
     infofile, address, authkey, tempdir = _fix_parameters(infofile, address, authkey, tempdir, default_tempdir)
-    if lockfile:
-        lock = lockfile.FileLock(infofile, timeout=2)
-        with lock:
-            return __tasks_server_start_nolock(infofile, address, authkey,
-                                               tempdir=tempdir, default_tempdir=default_tempdir, **kwargs)
-    else:
+    lock = mylockfile(infofile, timeout=2)
+    with lock:
         return __tasks_server_start_nolock(infofile, address, authkey,
                                            tempdir=tempdir, default_tempdir=default_tempdir, **kwargs)
 
