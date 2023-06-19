@@ -225,7 +225,7 @@ class fork_class(fork_class_base):
             except celery.exceptions.TaskRevokedError as E:
                 raise ColdocTasksProcessLookupError('Process %r terminated : %r' % ( self.__cmd_name, E) )
             except celery.exceptions.TimeoutError as E:
-                raise ColdocTasksTimeoutError('For cmd %r ', self.__cmd_name)
+                raise ColdocTasksTimeoutError('For cmd %r ' % ( self.__cmd_name, ) )
         if self.__ret[0] :
             raise self.__ret[1]
         return self.__ret[1]
