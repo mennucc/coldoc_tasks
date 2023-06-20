@@ -372,7 +372,7 @@ def _fork_mp_wrapper(*args, **kwargs):
         ret = (0, cmd(*k, **v))
     except Exception as E:
         ret = (1, E)
-    logger.info('Cmd %r id %s return %r', id_, cmd, ret)
+    logger.info('Id %r cmd %s return %r', id_, cmd, ret)
     pipe.send(ret)
     rets = pickle.dumps(ret)
     #
@@ -398,11 +398,14 @@ def run_server(address, authkey, infofile, **kwargs):
     if logfile is True:
         logfile_f = tempfile.NamedTemporaryFile(dir=tempdir, delete=False, mode='a',
                                                 prefix='server_', suffix='.log')
-        logfile_f.write('Start log, pid %r\n' % os.getpid())
         logfile = logfile_f.name
     if logfile:
         h = logging.handlers.RotatingFileHandler(logfile, maxBytes=2 ** 16, backupCount=5)
+        f = logging.Formatter('[%(asctime)s - %(funcName)s - %(levelname)s] %(message)s')
+        h.setFormatter(f)
         logger.addHandler(h)
+        #logger.setLevel(logging.INFO)
+        logger.info('Start log, pid %r',  os.getpid())
         kwargs['logfile'] = logfile
     #
     s = set(kwargs.keys()).difference(['default_tempdir','tempdir','with_django','logfile','pid','return_code'])
