@@ -124,7 +124,8 @@ class TestForkColDoc(Base,unittest.TestCase):
             cls.proc = multiprocessing.Process(target=target, args=(cls.address, cls.authkey,),
                                                kwargs={'tempdir':cls.tempdir})
             cls.proc.start()
-            ok = coldoc_tasks.coldoc_tasks.server_wait(cls.address, cls.authkey, 2.0)
+            kwargs = coldoc_tasks.coldoc_tasks.server_wait(cls.address, cls.authkey, 2.0)
+            ok = kwargs['return_code']
             if not ok:
                 cls.logger.critical("could not start server")
 

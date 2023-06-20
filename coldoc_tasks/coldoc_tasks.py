@@ -383,6 +383,7 @@ def _fork_mp_wrapper(*args, **kwargs):
 
 
 def run_server(address, authkey, infofile, **kwargs):
+    """ returns the `kwargs`, containing also `kwargs["return_code"]`"""
     L = multiprocessing.log_to_stderr()
     global logger
     L.setLevel(logger.getEffectiveLevel())
@@ -399,17 +400,18 @@ def run_server(address, authkey, infofile, **kwargs):
                                                 prefix='server_', suffix='.log')
         logfile_f.write('Start log, pid %r\n' % os.getpid())
         logfile = logfile_f.name
-        kwargs['logfile'] = logfile
     if logfile:
         h = logging.handlers.RotatingFileHandler(logfile, maxBytes=2 ** 16, backupCount=5)
         logger.addHandler(h)
+        kwargs['logfile'] = logfile
     #
-    if kwargs :
-        logger.warning('Some kwargs where ignored: %r ',kwargs)
+    s = set(kwargs.keys()).difference(['default_tempdir','tempdir','with_django','logfile','pid','return_code'])
+    if s:
+        logger.warning('Some kwargs where ignored: %r ', s)
     #
     manager = multiprocessing.managers.SyncManager(address=address, authkey=authkey)
     #
-    return_code = True
+    kwargs['return_code'] = True
     # currently tje code work better without a subprocess
     run_with_subprocess = False
     #
@@ -574,7 +576,7 @@ def run_server(address, authkey, infofile, **kwargs):
         pass
     except Exception:
         logger.exception('in run_server')
-        return_code = False
+        kwargs['return_code'] = False
     
     try:
         logger.info('Shutting down')
@@ -592,8 +594,8 @@ def run_server(address, authkey, infofile, **kwargs):
         pass
     except Exception:
         logger.exception('When cleaning after run_server')
-        return_code =  False
-    return return_code
+        kwargs['return_code'] =  False
+    return kwargs
 
 
 def server_wait(address, authkey, timeout = 2.0):
@@ -624,6 +626,7 @@ def tasks_server_readinfo(infofile):
 
 def tasks_server_writeinfo(infofile, *args, **kwargs):
     kw = copy.copy(kwargs)
+    kw.pop('default_tempdir', None)
     for j in range(len(args)):
         k = infofile_keywords[j]
         v = args[j]
@@ -643,21 +646,29 @@ def __tasks_server_start_nolock(infofile, address, authkey, **kwargs):
     tasks_server_writeinfo(infofile, address, authkey, **kwargs )
     ret = False
     try:
-        ret = run_server(address, authkey, infofile, **kwargs)
+        kwargs = run_server(address, authkey, infofile, **kwargs)
     except:
         logger.exception('When running task server')
-    del kwargs['pid']
+    kwargs['pid'] = None
     tasks_server_writeinfo(infofile, address, authkey, **kwargs )
     return ret
 
 def tasks_server_start(infofile, address=None, authkey=None,
-                       tempdir=None, default_tempdir=python_default_tempdir, **kwargs):
+                       tempdir=None, logfile=None, default_tempdir=python_default_tempdir, **kwargs):
     " start a server with `address` and `authkey` ,  saving info in `infofile (that is locked while in use)"
-    infofile, address, authkey, tempdir = _fix_parameters(infofile, address, authkey, tempdir, default_tempdir)
+    infofile, address, authkey, tempdir, logfile, other =  \
+        _fix_parameters(infofile, address, authkey, tempdir, logfile, default_tempdir)
+    if 'default_tempdir' in other:
+        other.pop('default_tempdir')
+        logger.warning(' `default_tempdir` ignored in infofile %r ', infofile)
+    for k in other:
+        if k not in kwargs:
+            logger.warning(' `%r` unused in infofile %r ', k, infofile)
+            kwargs[k] = other[k]
     lock = mylockfile(infofile, timeout=2)
     with lock:
         return __tasks_server_start_nolock(infofile, address, authkey,
-                                           tempdir=tempdir, default_tempdir=default_tempdir, **kwargs)
+                                           tempdir=tempdir, logfile=logfile, default_tempdir=default_tempdir, **kwargs)
 
 
 def _read_django_settings(kwargs, settings):
@@ -695,12 +706,13 @@ def task_server_check(info):
 
 
 def _fix_parameters(infofile=None, sock=None, auth=None,
-                    tempdir=None, default_tempdir=python_default_tempdir):
+                    tempdir=None, logfile=None, default_tempdir=python_default_tempdir):
     #
+    other_ = {}
     if isinstance(infofile, (str, bytes, Path)):
         if  os.path.isfile(infofile):
             sock_, auth_, pid_, other_ = tasks_server_readinfo(infofile)
-            tempdir_ = other_.get('tempdir')
+            tempdir_ = other_.pop('tempdir', None)
             if tempdir and tempdir_ and tempdir != tempdir_:
                 logger.warning('Changing infofile tempdir  %r > %r ', tempdir_, tempdir)
             tempdir = tempdir or tempdir_
@@ -710,6 +722,7 @@ def _fix_parameters(infofile=None, sock=None, auth=None,
             if auth and auth_ and auth != auth_:
                 logger.warning('Changing infofile  authkey')
             auth = auth or auth_
+            logfile = logfile or other_.pop('logfile', None)
     elif infofile is not None:
         logger.warning('Unsupported type for infofile: %r', infofile)
     #
@@ -745,9 +758,16 @@ def _fix_parameters(infofile=None, sock=None, auth=None,
     #
     auth = auth or os.urandom(10)
     #
+    if logfile and isinstance(logfile, (str, bytes, Path)):
+        d = os.path.dirname(logfile)
+        if not os.path.isdir(d):
+            logger.warning('Warning, the directory of `logfile`   %r does not exist', logfile)
+            logfile = None
+    #
     assert isinstance(sock, (str, bytes, Path))
     assert isinstance(auth, bytes)
-    return infofile, sock, auth, tempdir
+    assert logfile in (None, True) or isinstance(logfile, (str, bytes, Path))
+    return infofile, sock, auth, tempdir, logfile, other_
 
 def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
                            pythonpath=(),
@@ -813,8 +833,10 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
         #
         logger.info('starting task server')
         #
-        infofile, address, authkey, tempdir = _fix_parameters(infofile, address, authkey, tempdir, default_tempdir)
-        tasks_server_writeinfo(infofile, address, authkey, tempdir=tempdir, logfile=logfile, pythonpath=pythonpath)
+        infofile, address, authkey, tempdir, logfile, other = \
+            _fix_parameters(infofile, address, authkey, tempdir, logfile, default_tempdir)
+        if logfile: other['logfile'] = logfile
+        tasks_server_writeinfo(infofile, address, authkey, tempdir=tempdir, pythonpath=pythonpath, **other)
         #
         if use_multiprocessing:
             import multiprocessing
