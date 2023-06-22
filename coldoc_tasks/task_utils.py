@@ -17,7 +17,7 @@ except ImportError:
 
 def mylockfile(fil, timeout=None):
     " fake lockfile context "
-    return contextlib.nullcontext
+    return contextlib.nullcontext()
 
 try:
     import lockfile
