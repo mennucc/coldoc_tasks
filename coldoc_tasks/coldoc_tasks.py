@@ -28,11 +28,6 @@ __doc__ = """
 
      as `django_start` , but forks a separate process
 
-  django_start_from infofile
-  start_from infofile
-  
-     read the information from the infofile and start it
-
   stop infofile
   django_stop
 
@@ -965,6 +960,7 @@ def main(argv):
         if info is None:
             logger.error('This command needs that `COLDOC_TASKS_INFOFILE` be defined in `settings`')
             return False
+        # this is a non advertised command, used to start the daemon subprocess
         if argv[0] ==  'django_start_with':
             return tasks_server_start(infofile=info, with_django=True)
         if argv[0] ==  'django_start':
@@ -986,6 +982,7 @@ def main(argv):
             os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] =  ''
             return tasks_daemon_autostart(infofile=info, address=address, authkey=authkey, logfile=True)
     #
+    # this is a non advertised command, used to start the daemon subprocess
     if argv[0] == 'start_with':
         return tasks_server_start(infofile=info)
     #
