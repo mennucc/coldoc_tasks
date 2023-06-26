@@ -66,7 +66,9 @@ class fork_class(fork_class_base):
         if self.__other_pid and not self.already_wait:
             os.kill(self.__other_pid, signal_)
     #
-    def terminate(self, signal_ = signal.SIGKILL):
+    def terminate(self, signal_ = None):
+        if signal_ is None:
+            signal_  = getattr(signal, 'SIGKILL', signal.SIGTERM)
         if self.__other_pid and not self.already_wait:
             os.kill(self.__other_pid, signal_)
     #
