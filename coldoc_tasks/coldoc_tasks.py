@@ -856,7 +856,7 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
         else:
             if logfile is True:
                 logfile_ = tempfile.NamedTemporaryFile(dir=os.path.dirname(infofile),
-                                            delete=False,
+                                            delete=False, mode='a',
                                             prefix='coldoc_tasks_', suffix='.log')
             elif isinstance(logfile, (str,bytes,Path)):
                 logfile_ = open(logfile, 'a')
