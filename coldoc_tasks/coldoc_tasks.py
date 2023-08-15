@@ -254,7 +254,7 @@ class fork_class(fork_class_base):
         self.__address = address
         self.__authkey = authkey
         #
-        self.__timeout = None
+        self.__timeout = timeout
     #
     def __getstate__(self):
         self.__manager = None
