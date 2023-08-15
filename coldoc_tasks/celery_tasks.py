@@ -174,7 +174,7 @@ def _get_run_it(celery_app):
 class fork_class(fork_class_base):
     "class that runs a job in a celery task, and returns results or raises exception"
     fork_type = 'celery'
-    def __init__(self,  use_fork = True, celeryconfig=None, celery_app=None, timeout=None):
+    def __init__(self,  use_fork = True, celeryconfig=None, celery_app=None, timeout=None, queue=None):
         """ pass either `celeryconfig` or `celery_app` (from `get_client` )"""
         assert celery_app or celeryconfig
         super().__init__(use_fork = use_fork )

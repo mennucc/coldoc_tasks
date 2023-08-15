@@ -102,6 +102,7 @@ from coldoc_tasks.exceptions import *
 
 __all__ = ('get_manager', 'run_server', 'ping', 'status', 'shutdown', 'test', 'fork_class',
            'run_cmd', 'wait', 'get_result', 'join',
+           'queue_cmd',
            'tasks_daemon_autostart', 'tasks_daemon_django_autostart',
            'tasks_server_readinfo', 'tasks_server_writeinfo', 'tasks_server_start', 'task_server_check')
 
@@ -214,6 +215,12 @@ def run_cmd(manager, cmd, args, kwarks):
     proxy = manager.run_cmd__(cmd, args, kwarks)
     return proxy._getvalue()
 
+def queue_cmd(manager, cmd, args, kwarks, queue=True):
+    " queue a command for running in queue named `queue` "
+    proxy = manager.run_cmd__(cmd, args, kwarks, queue=queue)
+    return proxy._getvalue()
+
+
 def wait(id_, manager):
     " wait for command execution to end "
     F = manager.get_wait_socket__(id_)
@@ -246,7 +253,7 @@ def join(id_, manager):
 class fork_class(fork_class_base):
     "class that runs a job in a subprocess, and returns results or raises exception"
     fork_type = 'coldoc'
-    def __init__(self, address, authkey, use_fork = True, timeout=None):
+    def __init__(self, address, authkey, use_fork = True, timeout=None, queue=None):
         super().__init__(use_fork = use_fork )
         self.__cmd_id = None
         self.__ret = (2, RuntimeError('This should not happen'))
@@ -255,6 +262,7 @@ class fork_class(fork_class_base):
         self.__authkey = authkey
         #
         self.__timeout = timeout
+        self.__queue = None
     #
     def __getstate__(self):
         self.__manager = None
@@ -414,18 +422,19 @@ def run_server(address, authkey, infofile, **kwargs):
     run_with_subprocess = False
     #
     #
-    pool = server = None
     processes = {}
+    server = None
+    pools = {}
+    # default pool
+    pools[True] = default_pool = multiprocessing.pool.Pool()
     try:
         if with_django:
             os.environ.pop('COLDOC_TASKS_AUTOSTART', None)
             os.environ.setdefault('DJANGO_SETTINGS_MODULE', with_django)
             import django
             django.setup()
-        if 0:
-            # FIXME it would be better to use a Pool, but processes hang forever
-            pool = multiprocessing.pool.Pool()
-            z = pool.apply_async(str,(2,))
+        if 1:
+            z = default_pool.apply_async(str,(2,))
             z.wait()
             d = z.get()
             logger.info('********** %r', d)
@@ -445,7 +454,7 @@ def run_server(address, authkey, infofile, **kwargs):
             __do_run.value = 0
         #
         Nooone = (None, None, None)
-        def run_cmd__(c,k,v,pipe=None):
+        def run_cmd__(c, k, v, pipe=None, queue=None):
             id_ = base64.b64encode(randbytes(9),altchars=b'-_').decode('ascii')
             F = os.path.join(tempdir, 'socket_' + id_)
             socket_ = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -464,9 +473,17 @@ def run_server(address, authkey, infofile, **kwargs):
             auth_ = randbytes(8)
             access_pair_ = (F, auth_)
             #
-            proc = multiprocessing.Process(target=_fork_mp_wrapper, args=(id_, pipe[1], socket_, access_pair_, c, k, v, l))
-            proc.name = 'coldoc_task '+id_ + ' ' + repr(c.__name__)
-            proc.start()
+            if queue is None:
+                proc = multiprocessing.Process(target=_fork_mp_wrapper, args=(id_, pipe[1], socket_, access_pair_, c, k, v, l))
+                proc.name = 'coldoc_task '+id_ + ' ' + repr(c.__name__)
+                proc.start()
+            else:
+                if queue not in pools:
+                    pool_ = pools[queue] = multiprocessing.pool.Pool()
+                else:
+                    pool_ = pools[queue]
+                proc = pool_.apply_async(_fork_mp_wrapper, args=(id_, pipe[1], socket_, access_pair_, c, k, v, l))
+            #
             pipe0 = pipe[0]
             #pipe0._config['authkey'] = bytes(pipe0._config['authkey'])
             processes[id_] = (proc, pipe0, access_pair_)
@@ -488,7 +505,7 @@ def run_server(address, authkey, infofile, **kwargs):
                     logger.info('Waiting for result id = %r',  id_)
                     r = __send_message(b'#SEND', F) #get_result(id_) #pipe.recv()
                     __send_message(b'#QUIT', F)
-                    proc.join()
+                    proc_join(proc)
                 except  Exception as E:
                     r = (1, E)
             else:
@@ -522,7 +539,7 @@ def run_server(address, authkey, infofile, **kwargs):
                     if not sent:
                         logger.critical('The result of process %s was never recovered', id_)
                     __send_message(b'#QUIT', F)
-                    proc.join()
+                    proc_join(proc.join)
                 except  Exception as E:
                     logger.exception('Unexpected exception from id_ %r : %r', id_, E)
             else:
@@ -557,6 +574,13 @@ def run_server(address, authkey, infofile, **kwargs):
             d = get_result_join__(i)
             assert isinstance(d,tuple) and d[0] == 0 and d[1] == '2', repr(d)
             logger.info('self test OK')
+        # queue self test
+        if 1:
+            i = run_cmd__(str,(5,),{},queue=True)
+            #wait(i) no, the manager is not running
+            d = get_result_join__(i)
+            assert isinstance(d,tuple) and d[0] == 0 and d[1] == '5', repr(d)
+            logger.info('queue self test OK')
         # run the server
         if run_with_subprocess:
             logger.info('Start manager')
@@ -582,8 +606,9 @@ def run_server(address, authkey, infofile, **kwargs):
         for id_  in list(processes.keys()):
             join__(id_)
         kwargs.pop('processes', None)
-        if pool:
+        for pool in pools.values():
             pool.close()
+        for pool in pools.values():
             pool.join()
         if run_with_subprocess:
             manager.shutdown()

@@ -40,7 +40,7 @@ class fork_class_base(object):
 class fork_class(fork_class_base):
     "class that runs a job in a forked subprocess, and returns results or raises exception"
     fork_type = 'simple'
-    def __init__(self, use_fork = True, timeout=None):
+    def __init__(self, use_fork = True, timeout=None, queue=None):
         super().__init__(use_fork = use_fork)
         self.tempfile_name = None
         self.__my_pid    = os.getpid()
@@ -174,7 +174,7 @@ class fork_class(fork_class_base):
 class nofork_class(fork_class_base):
     "class that runs a job as usual, and returns results or raises exception"
     fork_type = 'nofork'
-    def __init__(self, use_fork = True, timeout=None):
+    def __init__(self, use_fork = True, timeout=None, queue=None):
         super().__init__(use_fork = use_fork)
         self.__ret = (2 , RuntimeError('Program bug') )
         self.__pickle_exception = None

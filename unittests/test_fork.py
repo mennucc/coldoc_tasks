@@ -50,6 +50,13 @@ class Base(object):
         r = subproc.wait()
         self.assertEqual(r , 6)
 
+    def test_fork_queue(self):
+        subproc = self.fork_class(queue=True)
+        subproc.run(fakesum, 1, 7, 3)
+        r = subproc.wait()
+        self.assertEqual(r , 11)
+
+
     def test_fork_raises(self):
         subproc = self.fork_class()
         subproc.run(fakediv, 1, 0)

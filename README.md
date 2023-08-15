@@ -128,6 +128,16 @@ will return the first working class in the list `preferences` (or the *nofork* c
 where `infofile` is the path to the info file (for the internal server), and
 `celeryconfig` is the path to the Celery `celeryconfig.py` file (that was `etc/celeryconfig.py`  in the above example)
 
+Queue
+-----
+
+You can use use
+
+    f=fork_class(queue=myqueue)
+
+to queue a job in the queue named `myqueue` ( `True` being the default queue);
+note that this is currently meaningful only for the `coldoc` type of `fork_class`.
+
 Further commands
 ----------------
 
