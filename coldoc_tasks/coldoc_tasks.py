@@ -648,6 +648,7 @@ def tasks_server_readinfo(infofile):
     return ret
 
 def tasks_server_writeinfo(infofile, *args, **kwargs):
+    "write values to infofile, positional arguments are   (address, authkey, pid)"
     kw = copy.copy(kwargs)
     kw.pop('default_tempdir', None)
     for j in range(len(args)):
