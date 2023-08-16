@@ -701,7 +701,7 @@ def _read_django_settings(kwargs, settings):
     kwargs['authkey']     = getattr(settings, 'COLDOC_TASKS_PASSWORD', None)
     kwargs['logfile']  = getattr(settings, 'COLDOC_TASKS_LOGFILE', None)
     kwargs['default_tempdir']  = getattr(settings, 'COLDOC_TASKS_TEMPDIR', python_default_tempdir)
-    kwargs['pythonpath'] = getattr(settings, 'COLDOC_TASKS_PYTHONPATH', tuple())
+    kwargs['pythonpath'] = getattr(settings, 'COLDOC_TASKS_PYTHONPATH', None)
     kwargs['with_django'] = True
 
 def tasks_django_server_start(settings, **kwargs):
@@ -794,7 +794,7 @@ def _fix_parameters(infofile=None, sock=None, auth=None,
     return infofile, sock, auth, tempdir, logfile, other_
 
 def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
-                           pythonpath=(),
+                           pythonpath=None,
                            cwd=None,
                            logfile = None,
                            opt = None,
@@ -847,8 +847,6 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
         if isinstance(sock_,str) and os.path.exists(sock_):
             logger.warning('Removing stale socket %r', (sock_,))
             os.unlink(sock_)
-    #
-    pythonpath = _normalize_pythonpath(pythonpath)
     # this does not work OK
     use_multiprocessing=False
     #
@@ -862,9 +860,13 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
         if logfile: other['logfile'] = logfile
         #
         p = other.get('pythonpath')
-        if p is not None and p != pythonpath:
-            logger.warning('Changed `pythonpath` from  %r to %r ', (p,pythonpath))
-        other['pythonpath'] = pythonpath
+        if pythonpath is not None:
+            pythonpath = _normalize_pythonpath(pythonpath)
+            other['pythonpath'] = os.path.sep.join(pythonpath)
+            if p is not None:
+                p = _normalize_pythonpath(p)
+                if  p != pythonpath:
+                    logger.warning('Changed `pythonpath` from  %r to %r ', p, pythonpath)
         #
         tasks_server_writeinfo(infofile, address, authkey, tempdir=tempdir, **other)
         #
