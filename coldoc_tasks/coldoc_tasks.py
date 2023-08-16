@@ -860,7 +860,13 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
         infofile, address, authkey, tempdir, logfile, other = \
             _fix_parameters(infofile, address, authkey, tempdir, logfile, default_tempdir)
         if logfile: other['logfile'] = logfile
-        tasks_server_writeinfo(infofile, address, authkey, tempdir=tempdir, pythonpath=pythonpath, **other)
+        #
+        p = other.get('pythonpath')
+        if p is not None and p != pythonpath:
+            logger.warning('Changed `pythonpath` from  %r to %r ', (p,pythonpath))
+        other['pythonpath'] = pythonpath
+        #
+        tasks_server_writeinfo(infofile, address, authkey, tempdir=tempdir, **other)
         #
         if use_multiprocessing:
             import multiprocessing
