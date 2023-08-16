@@ -32,6 +32,7 @@ class TestDaemon(unittest.TestCase):
         t = tempfile.NamedTemporaryFile(prefix='info_', delete=False)
         info = t.name
         proc, info_ = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(infofile=info, logfile=True)
+        self.assertTrue( info_ == info )
         self.assertTrue( proc )
         address, authkey = coldoc_tasks.coldoc_tasks.tasks_server_readinfo(info)[:2]
         #
@@ -41,7 +42,39 @@ class TestDaemon(unittest.TestCase):
         coldoc_tasks.coldoc_tasks.shutdown(address, authkey)
         coldoc_tasks.task_utils.proc_join(proc)
         t.close()
+        #print(t.name)
         os.unlink(t.name)
+
+    def test_daemon_twice(self):
+        t = tempfile.NamedTemporaryFile(prefix='info_', delete=False)
+        info = t.name
+        # start once, and stop
+        proc, info_ = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(infofile=info, logfile=True)
+        self.assertTrue( info_ == info )
+        self.assertTrue( proc )
+        address, authkey = coldoc_tasks.coldoc_tasks.tasks_server_readinfo(info)[:2]
+        ping = coldoc_tasks.coldoc_tasks.ping(address, authkey)
+        self.assertTrue( ping )
+        coldoc_tasks.coldoc_tasks.shutdown(address, authkey)
+        coldoc_tasks.task_utils.proc_join(proc)
+        # check that it is off
+        ping = coldoc_tasks.coldoc_tasks.ping(address, authkey)
+        self.assertFalse( ping )
+        # start again and stop again
+        proc, info_ = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(infofile=info, logfile=True)
+        self.assertTrue( info_ == info )
+        self.assertTrue( proc )
+        address2, authkey2 = coldoc_tasks.coldoc_tasks.tasks_server_readinfo(info)[:2]
+        self.assertTrue( address2 == address)
+        self.assertTrue( authkey2 == authkey)
+        ping = coldoc_tasks.coldoc_tasks.ping(address, authkey)
+        self.assertTrue( ping )
+        coldoc_tasks.coldoc_tasks.shutdown(address, authkey)
+        coldoc_tasks.task_utils.proc_join(proc)
+        t.close()
+        #print(open(info).read())
+        os.unlink(t.name)
+
 
 if __name__ == '__main__':
     unittest.main()
