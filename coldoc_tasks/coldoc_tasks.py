@@ -691,9 +691,15 @@ def tasks_server_start(infofile, address=None, authkey=None,
             logger.warning(' `%r` unused in infofile %r ', k, infofile)
             kwargs[k] = other[k]
     lock = mylockfile(infofile, timeout=2)
-    with lock:
-        return __tasks_server_start_nolock(infofile, address, authkey,
+    ret = None
+    try:
+        with lock:
+            ret =  __tasks_server_start_nolock(infofile, address, authkey,
                                            tempdir=tempdir, logfile=logfile, default_tempdir=default_tempdir, **kwargs)
+    except Exception as E:
+        logger.exception('while starting server')
+        ret = False
+    return ret
 
 
 def _read_django_settings(kwargs, settings):
