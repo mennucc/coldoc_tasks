@@ -117,7 +117,8 @@ class TestForkColDoc(Base,unittest.TestCase):
         cls.logfile = tempfile.NamedTemporaryFile(prefix='coldoc_log_', delete=False, dir=T)
         #
         if 1: 
-            cls.proc, info_ = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(cls.infofile, cls.address, cls.authkey, 
+            cls.proc, info_ = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(cls.infofile,
+                                                                               address=cls.address, authkey=cls.authkey,
                                                                     tempdir=cls.tempdir,
                                                                     logfile=cls.logfile.name,
                                                                     pythonpath=(sourcedir,testdir),

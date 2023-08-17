@@ -12,6 +12,14 @@ $ pytest-3 unittests/test_cli.py
 import os, sys, io, unittest, tempfile, shutil, time
 import functools, tempfile, threading, multiprocessing, logging, signal
 from os.path import join as osjoin
+import concurrent.futures
+
+
+try:
+    import lockfile
+except ImportError:
+    lockfile = None
+
 
 import logging
 logger = logging.getLogger(__name__)
@@ -74,6 +82,63 @@ class TestDaemon(unittest.TestCase):
         t.close()
         #print(open(info).read())
         os.unlink(t.name)
+
+    @unittest.skipIf(lockfile is None,
+                     "must install the `lockfile` library for this test")
+    def test_daemon_twice_lock(self):
+        t = tempfile.NamedTemporaryFile(prefix='info_', delete=False)
+        info = t.name
+        # start
+        def run1(l):
+            log1 = tempfile.NamedTemporaryFile(prefix=l, delete=False)
+            proc1, info1 = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(infofile=info, logfile=log1.name)
+            self.assertTrue( info1 == info )
+            self.assertTrue( proc1 )
+            address1, authkey1 = coldoc_tasks.coldoc_tasks.tasks_server_readinfo(info)[:2]
+            ping1 = coldoc_tasks.coldoc_tasks.ping(address1, authkey1)
+            self.assertTrue( ping1 )
+            return log1,proc1,info1,address1,authkey1,ping1
+        
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            f1 = executor.submit(run1, 'log1')
+            f2 = executor.submit(run1, 'log2')
+            r1 = f1.result()
+            r2 = f2.result()
+            #print('=== r1',r1)
+            #print('=== r2',r2)
+        log1,proc1,info1,address1,authkey1,ping1 = r1
+        log2,proc2,info2,address2,authkey2,ping2 = r2
+        
+        self.assertEqual( info2, info )
+        self.assertEqual( info1, info )
+        
+        proc1pid =  getattr(proc1,'pid',proc1)
+        proc2pid =  getattr(proc2,'pid',proc2)
+        self.assertEqual( proc1pid, proc2pid )
+        
+        self.assertEqual(address1, address2)
+        self.assertEqual(authkey1, authkey2)
+        
+        ## stop
+        coldoc_tasks.coldoc_tasks.shutdown(address1, authkey1)
+        coldoc_tasks.task_utils.proc_join(proc2)
+
+        t.close()
+        #print(open(info).read())
+        os.unlink(t.name)
+        
+        if 0:
+            print('v'*30)
+            with open(log1.name) as f1:
+                print(f1.read())
+            print('^'*30)
+            log1.close()
+            
+            print('v'*30)
+            with open(log2.name) as f2:
+                print(f2.read())
+            print('^'*30)
+            log2.close()
 
 
 if __name__ == '__main__':

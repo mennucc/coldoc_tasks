@@ -800,7 +800,7 @@ def _fix_parameters(infofile=None, sock=None, auth=None,
     assert logfile in (None, True) or isinstance(logfile, (str, bytes, Path))
     return infofile, sock, auth, tempdir, logfile, other_
 
-def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
+def tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
                            pythonpath=None,
                            cwd=None,
                            logfile = None,
@@ -938,6 +938,21 @@ def tasks_daemon_autostart(infofile=None, address=None, authkey=None,
                 jt.run()
             proc = False
     return proc, infofile
+
+def tasks_daemon_autostart(infofile, **kwargs):
+    " as tasks_daemon_autostart_nolock(), but adds a lock, to avoid race condition, i.e. starting two servers with same infofile "
+    assert isinstance(infofile, (str,bytes, Path))
+    if not os.path.isdir( os.path.dirname(infofile)):
+        logger.warning("This infofile refers to a non-existant directory %r, cannot lock", infofile)
+        return tasks_daemon_autostart_nolock(infofile, **kwargs)
+    ret = None
+    try:
+        with mylockfile(infofile+'-autostart', timeout=2):
+            ret = tasks_daemon_autostart_nolock(infofile, **kwargs)
+    except Exception as E:
+        logger.exception('while starting server')
+        ret = False
+    return ret
 
 
 def tasks_daemon_django_autostart(settings, **kwargs):
