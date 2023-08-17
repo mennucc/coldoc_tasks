@@ -671,6 +671,7 @@ def __tasks_server_start_nolock(infofile, address, authkey, **kwargs):
     ret = False
     try:
         kwargs = run_server(address, authkey, infofile, **kwargs)
+        ret = kwargs.get('return_code')
     except:
         logger.exception('When running task server')
     kwargs['pid'] = None
