@@ -929,6 +929,7 @@ def tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
                                     env = env,
                                     stderr=subprocess.STDOUT, text=True,  cwd=cwd)
             devnull.close()
+            logfile_.close()
         # check it
         ok = server_wait(address, authkey,timeout)
         if ok:
