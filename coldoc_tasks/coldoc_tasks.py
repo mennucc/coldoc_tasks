@@ -340,21 +340,21 @@ def shutdown(address, authkey):
     except Exception as E:
         logger.warning('When shutdown %r',E)
 
-def test(address, authkey):
+def test(address, authkey, print_=print):
     import coldoc_tasks.task_utils as task_utils
     logger.setLevel(logging.INFO)
     FC = functools.partial(fork_class, address=address, authkey=authkey)
     task_utils.logger.setLevel(logging.INFO)
-    print('*' * 30 + '(coldoc forking)')
-    err = task_utils.test_fork(fork_class=FC)
-    print('*' * 30 + '(coldoc not forking)')
+    print_('*' * 30 + '(coldoc forking)')
+    err = task_utils.test_fork(fork_class=FC, print_=print_)
+    print_('*' * 30 + '(coldoc not forking)')
     FCN = functools.partial(fork_class, use_fork = False, address=address, authkey=authkey)
-    err += task_utils.test_fork(fork_class=FCN)
-    print('*' * 30 + '(coldoc end)')
+    err += task_utils.test_fork(fork_class=FCN, print_=print_)
+    print_('*' * 30 + '(coldoc end)')
     if os.environ.get('DJANGO_SETTINGS_MODULE') == 'ColDocDjango.settings':
         f = FC()
         f.run(__countthem)
-        print('---- test of reading the Django database: there are %r DMetadata objects' % f.wait())
+        print_('---- test of reading the Django database: there are %r DMetadata objects' % f.wait())
     return err
 
 
