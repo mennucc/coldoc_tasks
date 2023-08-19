@@ -44,7 +44,10 @@ class TestDaemon(unittest.TestCase):
         self.assertTrue( proc )
         address, authkey = coldoc_tasks.coldoc_tasks.tasks_server_readinfo(info)[:2]
         #
-        err = coldoc_tasks.coldoc_tasks.test(address, authkey)
+        def noprint(*k, **v):
+            pass
+        #
+        err = coldoc_tasks.coldoc_tasks.test(address, authkey, print_=noprint)
         self.assertTrue(err == 0)
         #
         coldoc_tasks.coldoc_tasks.shutdown(address, authkey)
