@@ -69,7 +69,7 @@ class TestDaemon(unittest.TestCase):
         coldoc_tasks.coldoc_tasks.shutdown(address, authkey)
         coldoc_tasks.task_utils.proc_join(proc)
         # check that it is off
-        ping = coldoc_tasks.coldoc_tasks.ping(address, authkey)
+        ping = coldoc_tasks.coldoc_tasks.ping(address, authkey, warn=False)
         self.assertFalse( ping )
         # start again and stop again
         proc, info_ = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(infofile=info, logfile=True)
@@ -124,7 +124,13 @@ class TestDaemon(unittest.TestCase):
         
         ## stop
         coldoc_tasks.coldoc_tasks.shutdown(address1, authkey1)
-        coldoc_tasks.task_utils.proc_join(proc2)
+        if not isinstance(proc1,int):
+            # avoid an useless warning by joining the subprocess
+            coldoc_tasks.task_utils.proc_join(proc1)
+        elif not isinstance(proc2,int):
+            coldoc_tasks.task_utils.proc_join(proc2)
+        else:
+            coldoc_tasks.task_utils.proc_join(proc1pid)
 
         t.close()
         #print(open(info).read())
