@@ -731,7 +731,10 @@ def task_server_check(info):
         if pid and ping(address=sock, authkey=auth):
             return True, sock, auth, pid
         else:
-            logger.warning('Tasks server pid %r is not responding', pid)
+            if pid:
+                logger.warning('Tasks server pid %r is not responding', pid)
+            else:
+                logger.debug('Tasks server sock %r has no pid and is not responding', sock)
             return False, sock, auth, pid
     return False, None, None, None
 
