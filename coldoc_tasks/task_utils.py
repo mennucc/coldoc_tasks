@@ -182,9 +182,17 @@ def proc_join(proc):
         # FIXME in Celery, if the process is running, we don't know its PID
         logger.warning("Don't know the true process id, can't wait")
     elif isinstance(proc, int):
-        if psutil:
-            if psutil.pid_exists(proc):
-                os.waitpid(proc, 0)
+        if psutil and not psutil.pid_exists(proc):
+            return
+        for j in range(5):
+            #print('wait %r' % proc)
+            pid , wstatus = os.waitpid(proc, os.WNOHANG)
+            #if pid != proc:
+            #    logger.error(' pid %r  != proc %r ', pid, proc)
+            if pid == proc and ( os.WIFEXITED(wstatus) or os.WIFSIGNALED(wstatus) ):
+                 return
+            logger.info('waitpid(%r) returned pid %r status %r ; waiting more' % (proc, pid, wstatus))
+            time.sleep(0.5)
     elif hasattr(proc, 'join'):
         proc.join()
     elif hasattr(proc, 'wait'):
