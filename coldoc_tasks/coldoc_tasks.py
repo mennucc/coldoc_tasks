@@ -940,7 +940,7 @@ def tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
             logger.critical('Cannot start task process, see %r', getattr(logfile_,'name', logfile_))
             if not use_multiprocessing:
                 jt = threading.Thread(target=proc.wait)
-                jt.run()
+                jt.start()
             proc = False
     return proc, infofile
 
