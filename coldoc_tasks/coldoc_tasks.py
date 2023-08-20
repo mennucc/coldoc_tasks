@@ -709,7 +709,7 @@ def _read_django_settings(kwargs, settings):
     kwargs['logfile']  = getattr(settings, 'COLDOC_TASKS_LOGFILE', None)
     kwargs['default_tempdir']  = getattr(settings, 'COLDOC_TASKS_TEMPDIR', python_default_tempdir)
     kwargs['pythonpath'] = getattr(settings, 'COLDOC_TASKS_PYTHONPATH', None)
-    kwargs['with_django'] = True
+    kwargs['with_django'] = os.environ.get('DJANGO_SETTINGS_MODULE')
 
 def tasks_django_server_start(settings, **kwargs):
     _read_django_settings(kwargs, settings)
@@ -1027,7 +1027,7 @@ def main(argv):
             return False
         # this is a non advertised command, used to start the daemon subprocess
         if argv[0] ==  'django_start_with':
-            return tasks_server_start(infofile=info, with_django=True)
+            return tasks_server_start(infofile=info, with_django=DJANGO_SETTINGS_MODULE)
         if argv[0] ==  'django_start':
             return tasks_django_server_start(settings, infofile= info)
         #
