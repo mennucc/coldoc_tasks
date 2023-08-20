@@ -819,6 +819,7 @@ def tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
     """ Check if there is a server running using `infofile`;
     if there is, return (PID, infofile),      if not, start it (as a subprocess), and return(`proc`, `infofile`)
     (where `proc` is either a `subprocess.Popen` or `multiprocessing.Process` instance),
+    in case of exception, the wrapper `tasks_daemon_autostart` returns (`False`, exception)
    
     Arguments notes: 
         `address` is the socket (if `None`, it will be read from `infofile`, that must exist);
@@ -944,18 +945,21 @@ def tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
     return proc, infofile
 
 def tasks_daemon_autostart(infofile, **kwargs):
-    " as tasks_daemon_autostart_nolock(), but adds a lock, to avoid race condition, i.e. starting two servers with same infofile "
+    """ As tasks_daemon_autostart_nolock(), but adds a lock, to avoid race condition,
+    i.e. starting two servers with same infofile;
+    in case of exception (such as lock timeout),  returns (`False`, exception) 
+    """
     assert isinstance(infofile, (str,bytes, Path))
     if not os.path.isdir( os.path.dirname(infofile)):
         logger.warning("This infofile refers to a non-existant directory %r, cannot lock", infofile)
         return tasks_daemon_autostart_nolock(infofile, **kwargs)
-    ret = None
+    ret = None, None
     try:
         with mylockfile(infofile+'-autostart', timeout=2):
             ret = tasks_daemon_autostart_nolock(infofile, **kwargs)
     except Exception as E:
         logger.exception('while starting server')
-        ret = False
+        ret = False, E
     return ret
 
 
