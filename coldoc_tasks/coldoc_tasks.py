@@ -756,7 +756,8 @@ def _fix_parameters(infofile=None, sock=None, auth=None,
             if auth and auth_ and auth != auth_:
                 logger.warning('Changing infofile  authkey')
             auth = auth or auth_
-            logfile = logfile or other_.pop('logfile', None)
+            logfile2 = other_.pop('logfile', None)
+            logfile = logfile or logfile2
     elif infofile is not None:
         logger.warning('Unsupported type for infofile: %r', infofile)
     #
