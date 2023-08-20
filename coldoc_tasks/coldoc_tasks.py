@@ -847,6 +847,12 @@ def tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
         ok, sock_, auth_, pid_ = task_server_check(infofile)
         if ok:
             return pid_, infofile
+        if not ok and sock_ and os.path.exists(sock_):
+            try:
+                os.unlink(sock_)
+                logger.warning('Removed stale socket %r (pid %r) ', sock_, pid_ )
+            except:
+                logger.exception('While removing stale socket %r (pid %r) ', sock_, pid_ )
     else:
         sock_ = auth_ = pid_  = None,
     #
