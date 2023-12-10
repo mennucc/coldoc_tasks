@@ -301,3 +301,11 @@ If you wish to help in developing, please
     git config --local core.hooksPath .githooks/
 
 so that each commit is pre tested.
+
+
+Acknowledgements
+================
+
+The principal author has used the Python code editor "wing" by
+[Wingware](http://wingware.com/)
+to develop this project.
