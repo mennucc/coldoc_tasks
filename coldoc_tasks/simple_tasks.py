@@ -92,8 +92,8 @@ class fork_class(fork_class_base):
                     ret = cmd(*k, **v)
                     ret = (0,ret)
                 except Exception as e:
-                    logger.exception('class_fork.run , insider forked pid %r, cmd %r :', os.getpid(), self.__cmd)
                     ret = (1, e)
+                    #logger.exception('class_fork.run , insider forked pid %r, cmd %r got exception as follows :', os.getpid(), self.__cmd)
                 with open(self.tempfile_name,'wb') as f:
                     pickle.dump(ret, f)
                 # avoid deleting the file
