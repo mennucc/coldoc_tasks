@@ -27,7 +27,7 @@ The current version of the code is `0.1`.
 Authors
 -------
 
-This software is Copyright 2023
+This software is Copyright 2023-25
 [Andrea C. G. Mennucci](https://www.sns.it/it/persona/andrea-carlo-giuseppe-mennucci)
 
 License
