@@ -132,12 +132,12 @@ def shutdown(celeryconfig_):
 
 stop = shutdown
 
-def test(celeryconfig_):
+def test(celeryconfig_, print_=print):
     from coldoc_tasks.task_utils import test_fork
-    print('*' * 30 + '(celery forking)')
+    print_('*' * 30 + '(celery forking)')
     FC = functools.partial(fork_class, celeryconfig=celeryconfig_)
     err = test_fork(fork_class=FC)
-    print('*' * 30 + '(celery end)')
+    print_('*' * 30 + '(celery end)')
     return err
 
 

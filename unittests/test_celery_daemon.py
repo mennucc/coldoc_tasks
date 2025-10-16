@@ -39,7 +39,11 @@ class TestDaemon(unittest.TestCase):
         cc = os.path.join(sourcedir, 'etc', 'celeryconfig.py')
         proc = coldoc_tasks.celery_tasks.tasks_daemon_autostart(cc)
         self.assertTrue( proc )
-        ret = coldoc_tasks.celery_tasks.test(cc)
+        #
+        def noprint(*k, **v):
+            pass
+        #
+        ret = coldoc_tasks.celery_tasks.test(cc, print_=noprint)
         self.assertTrue( ret == 0 )
         coldoc_tasks.celery_tasks.shutdown(cc)
         coldoc_tasks.task_utils.proc_join(proc)
