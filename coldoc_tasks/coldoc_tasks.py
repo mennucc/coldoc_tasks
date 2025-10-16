@@ -678,7 +678,7 @@ def __tasks_server_start_nolock(infofile, address, authkey, **kwargs):
     try:
         kwargs = run_server(address, authkey, infofile, **kwargs)
         ret = kwargs.get('return_code')
-    except:
+    except Exception as E:
         logger.exception('When running task server')
     kwargs['pid'] = None
     tasks_server_writeinfo(infofile, address, authkey, **kwargs )
@@ -857,7 +857,7 @@ def tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
             try:
                 os.unlink(sock_)
                 logger.warning('Removed stale socket %r (pid %r) ', sock_, pid_ )
-            except:
+            except Exception as E:
                 logger.exception('While removing stale socket %r (pid %r) ', sock_, pid_ )
     else:
         sock_ = auth_ = pid_  = None,
@@ -1111,7 +1111,7 @@ if __name__ == '__main__':
         ret = main(argv)
     except (SystemExit, KeyboardInterrupt):
         pass
-    except:
+    except Exception as E:
         ret = False
         logger.exception("While %r", argv)
     sys.exit(0 if ret else 1)

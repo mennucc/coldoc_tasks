@@ -455,7 +455,7 @@ if __name__ == '__main__':
         ret = main(argv)
     except (SystemExit, KeyboardInterrupt):
         pass
-    except:
+    except Exception as E:
         logger.exception("While %r", argv)
         ret = False
     sys.exit(0 if ret else 1)

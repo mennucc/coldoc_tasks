@@ -32,7 +32,7 @@ default_chmod = 0o600
 def mychmod(f, mode=default_chmod):
     try:
         os.chmod(f, mode)
-    except:
+    except Exception as E:
         logger.exception('Why cant I set chmod %r on %r', mode, f)
 
 
