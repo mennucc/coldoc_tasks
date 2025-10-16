@@ -22,7 +22,7 @@ Code
 The code is open source,
 [it is available at GitHub.](https://github.com/mennucc/coldoc_tasks)
 
-The current version of the code is `0.1`.
+The current version of the code is `0.2`.
 
 Authors
 -------
