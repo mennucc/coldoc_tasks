@@ -393,9 +393,10 @@ def main(argv):
         return ret
     #
     elif 'test' == argv[0]:
-        ret = test(argv[1])
+        celeryconfig_ =  argv[1]
+        ret = test(celeryconfig_)
         if os.environ.get('DJANGO_SETTINGS_MODULE') == 'ColDocDjango.settings':
-            f = FC()
+            f = fork_class(celeryconfig=celeryconfig_)
             f.run(__countthem)
             print('---- test of reading the Django database: there are %d DMetadata objects' % f.wait())
         return ret == 0
