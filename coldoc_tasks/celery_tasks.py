@@ -332,6 +332,9 @@ def tasks_daemon_autostart(celeryconfig,
                                             prefix='coldoc_tasks_', suffix='.log')
             elif isinstance(logfile, (str,bytes,Path)):
                 logfile_ = open(logfile, 'a')
+            elif isinstance(logfile, io.IOBase) or isinstance(logfile, tempfile._TemporaryFileWrapper):
+                assert logfile.writable(), "This logfile is not writable"
+                logfile_ = logfile
             else:
                 if logfile is not None:
                     logger.error('parameter `logfile` is of unsupported type %r', type(logfile))
@@ -352,7 +355,8 @@ def tasks_daemon_autostart(celeryconfig,
                                     env = env,
                                     stderr=subprocess.STDOUT, text=True,  cwd=cwd)
             devnull.close()
-            logfile_.close()
+            if logfile_ != logfile:
+                logfile_.close()
         # check it
         ok = server_wait(celeryconfig,timeout)
         if not ok:
