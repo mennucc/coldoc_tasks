@@ -32,7 +32,7 @@ except ImportError:
 import coldoc_tasks.simple_tasks, coldoc_tasks.coldoc_tasks, coldoc_tasks.celery_tasks
 
 
-from coldoc_tasks.task_utils import __fork_reentrat_test as fork_reentrat_test
+from coldoc_tasks.task_utils import format_exception, __fork_reentrat_test as fork_reentrat_test
 from coldoc_tasks.exceptions import ColdocTasksTimeoutError
 
 from fakejobs import *
@@ -70,7 +70,7 @@ class Base(object):
         try:
             r = subproc.wait()
         except ZeroDivisionError as exc:
-            logger.debug('local  traceback %r',  traceback.format_exception(exc))
+            logger.debug('local  traceback %r', format_exception(exc))
         else:
             self.fail("ZeroDivisionError was not raised")
         logger.debug('remote traceback %r', subproc.traceback)
