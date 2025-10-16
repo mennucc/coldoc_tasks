@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
 from coldoc_tasks.simple_tasks import fork_class_base
 from coldoc_tasks.task_utils import _normalize_pythonpath, mychmod, proc_join, mylockfile
-from coldoc_tasks.task_utils import read_config, write_config
+from coldoc_tasks.task_utils import read_config, write_config, format_exception
 from coldoc_tasks.exceptions import *
 
 
@@ -256,7 +256,7 @@ class fork_class(fork_class_base):
     def __init__(self, address, authkey, use_fork = True, timeout=None, queue=None):
         super().__init__(use_fork = use_fork )
         self.__cmd_id = None
-        self.__ret = (2, RuntimeError('This should not happen'))
+        self.__ret = (2, RuntimeError('This should not happen'), None)
         self.__manager = None
         self.__address = address
         self.__authkey = authkey
@@ -275,7 +275,7 @@ class fork_class(fork_class_base):
     def run(self, cmd, *k, **v):
         assert self.already_run is False
         self.__cmd_name = cmd.__name__
-        self.__ret = (2, RuntimeError('Process %r : could not read its return value' % ( self.__cmd_name,) ))
+        self.__ret = (2, RuntimeError('Process %r : could not read its return value' % ( self.__cmd_name,) ), None)
         if self.use_fork_:
             if self.__manager is None:
                 self.__manager = get_manager(self.__address, self.__authkey)
@@ -283,9 +283,9 @@ class fork_class(fork_class_base):
             self.__cmd_id = proxy._getvalue()
         else:
             try:
-                self.__ret = (0, cmd(*k, **v))
+                self.__ret = (0, cmd(*k, **v), None)
             except Exception as E:
-                self.__ret = (1, E)
+                self.__ret = (1, E, format_exception(E))
         self.already_run = True
     #
     def terminate(self):
@@ -294,7 +294,7 @@ class fork_class(fork_class_base):
                 self.__manager = get_manager(self.__address, self.__authkey)
             self.__manager.terminate__(self.__cmd_id)
     #
-    def wait(self, timeout=None):
+    def wait(self, timeout=None, raise_exception=True):
         timeout = self.__timeout if timeout is None else timeout
         assert self.already_run
         if self.use_fork_ and not self.already_wait:
@@ -311,7 +311,10 @@ class fork_class(fork_class_base):
             except Exception as E:
                 raise RuntimeError('Process %r exception on wait : %r' % ( self.__cmd_name, E) )
         if self.__ret[0] :
-            raise self.__ret[1]
+            self.traceback_ = self.__ret[2]
+            self.exception_ = self.__ret[1]
+            if raise_exception:
+                raise self.__ret[1]
         return self.__ret[1]
 
 
@@ -372,9 +375,9 @@ def _fork_mp_wrapper(*args, **kwargs):
     logger = multiprocessing.get_logger() 
     logger.info('Start id %s cmd %r %r %r ', id_, cmd, k, v)
     try:
-        ret = (0, cmd(*k, **v))
+        ret = (0, cmd(*k, **v), None)
     except Exception as E:
-        ret = (1, E)
+        ret = (1, E, format_exception(E))
     logger.info('Id %r cmd %s return %r', id_, cmd, ret)
     pipe.send(ret)
     rets = pickle.dumps(ret)

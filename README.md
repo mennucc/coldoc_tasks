@@ -101,11 +101,23 @@ then you schedule the the command using
 
 with the function in `cmd` and all its arguments following; then you call
 
-    ret=f.wait(timeout=None)
+    ret=f.wait()
 
-to wait for the result; if the *cmd* raised an exception, `ret=f.wait()` will raise the same exception;
+to wait for the result; this accepts two options: `timeout` (in seconds) and `raise_exception`.
+If the *cmd* raised an exception, `ret=f.wait()` will raise the same exception,
+unless the option`raise_exception=False` is given;
 if `timeout` occours, `ColdocTasksTimeoutError` is raised; if the subprocess has disappeared,
 `ColdocTasksProcessLookupError` is raised.
+
+If the option `raise_exception=False` is given then, in case of exception while running *cmd*,
+the exception object will be returned, but not raised.
+
+In any cases, after `f.wait` has returned,
+`f.exception` will contain the exception (if any) raised by the command *cmd*,
+and `f.traceback` will return the traceback, as a list of strings.
+
+Note that `f.traceback` is the original traceback as occurred when the program ran (usually in a subprocess), whereas the
+traceback in the exception may refer to the stack as when the exception was re-raised.
 
 
 Task servers

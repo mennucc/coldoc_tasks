@@ -9,7 +9,7 @@ or
 $ pytest-3 unittests/test_fork.py 
 """
 
-import os, sys, io, unittest, tempfile, shutil, time
+import os, sys, io, unittest, tempfile, shutil, time, traceback
 import functools, tempfile, threading, multiprocessing, logging, signal
 from os.path import join as osjoin
 
@@ -55,26 +55,52 @@ class Base(object):
         subproc.run(fakesum, 1, 7, 3)
         r = subproc.wait()
         self.assertEqual(r , 11)
+        self.assertTrue(subproc.exception is None)
+        self.assertTrue(subproc.traceback is None)
 
 
     def test_fork_raises(self):
         subproc = self.fork_class()
         subproc.run(fakediv, 1, 0)
-        with self.assertRaises(ZeroDivisionError):
+        ### no, this clears the traceback
+        #with self.assertRaises(ZeroDivisionError) as cm:
+        #    subproc.wait()
+        #print('  CM   traceback',  traceback.format_exception(cm.exception))
+        #
+        try:
             r = subproc.wait()
+        except ZeroDivisionError as exc:
+            logger.debug('local  traceback %r',  traceback.format_exception(exc))
+        else:
+            self.fail("ZeroDivisionError was not raised")
+        logger.debug('remote traceback %r', subproc.traceback)
+        self.assertTrue(isinstance(subproc.exception, ZeroDivisionError))
+        self.assertTrue(isinstance(subproc.traceback, list))
+ 
+    def test_fork_doesnt_raise(self):
+        subproc = self.fork_class()
+        subproc.run(fakediv, 1, 0)
+        r = subproc.wait(raise_exception=False)
+        self.assertTrue(isinstance(subproc.exception, ZeroDivisionError))
+        self.assertTrue(subproc.exception == r)
+        self.assertTrue(isinstance(subproc.traceback, list))
 
     def test_nofork(self):
         subproc = self.fork_class(use_fork=False)
         subproc.run(fakesum, 1, 2, 3)
         r = subproc.wait()
         self.assertEqual(r , 6)
+        self.assertTrue(subproc.exception is None)
+        self.assertTrue(subproc.traceback is None)
 
     def test_nofork_raises(self):
         subproc = self.fork_class(use_fork=False)
         subproc.run(fakediv, 1, 0)
         with self.assertRaises(ZeroDivisionError):
             r = subproc.wait()
-            
+        self.assertTrue(isinstance(subproc.exception, ZeroDivisionError))
+        self.assertTrue(isinstance(subproc.traceback, list))
+
     def test_reentrant(self):
         N = 2
         D = 4
@@ -161,7 +187,7 @@ class TestForkColDoc(Base,unittest.TestCase):
         id_ = coldoc_tasks.coldoc_tasks.run_cmd(manager, str, (344,), {})
         coldoc_tasks.coldoc_tasks.wait(id_, manager)
         r = coldoc_tasks.coldoc_tasks.get_result(id_, manager)
-        self.assertEqual(r , (0, '344') )
+        self.assertEqual(r , (0, '344', None) )
 
 
 class TestForkCelery(Base,unittest.TestCase):

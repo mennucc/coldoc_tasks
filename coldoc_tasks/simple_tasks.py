@@ -3,6 +3,7 @@ import sys, os, signal, tempfile, pickle, logging, functools
 import logging
 logger = logging.getLogger(__name__)
 
+from .task_utils import format_exception
 
 ############ class for forking
 
@@ -22,6 +23,8 @@ class fork_class_base(object):
         self.already_run = False
         self.already_wait = False
         self.use_fork_ = use_fork and self.can_fork()
+        self.traceback_ = None
+        self.exception_ = None
     #
     # must be defined in each class, as a static method
     #def can_fork(self):
@@ -34,6 +37,14 @@ class fork_class_base(object):
     def use_fork(self,v):
         assert self.already_run is False
         self.use_fork_ = v and self.can_fork()
+    @property
+    def traceback(self):
+        "returns the exception (if any)"
+        return self.traceback_
+    @property
+    def exception(self):
+        "return the traceback, as a list of strings"
+        return self.exception_
 
 #####################################
 
@@ -45,7 +56,7 @@ class fork_class(fork_class_base):
         self.tempfile_name = None
         self.__my_pid    = os.getpid()
         self.__other_pid = None
-        self.__ret = (2 , RuntimeError('Program bug') )
+        self.__ret = (2 , RuntimeError('Program bug'), None)
         self.__signal = None
         self.__pickle_exception = None
         # __del__ methods may be run after modules are gc
@@ -90,10 +101,10 @@ class fork_class(fork_class_base):
                              self.__other_pid, self.__cmd, self.tempfile_name)
                 try:
                     ret = cmd(*k, **v)
-                    ret = (0,ret)
+                    ret = (0,ret, None)
                 except Exception as e:
-                    ret = (1, e)
                     #logger.exception('class_fork.run , insider forked pid %r, cmd %r got exception as follows :', os.getpid(), self.__cmd)
+                    ret = (1, e, format_exception(e))
                 with open(self.tempfile_name,'wb') as f:
                     pickle.dump(ret, f)
                 # avoid deleting the file
@@ -107,11 +118,11 @@ class fork_class(fork_class_base):
                                self.__my_pid, self.__other_pid, self.__cmd, self.tempfile_name)
         else:
             try:
-                self.__ret = (0, cmd(*k, **v))
+                self.__ret = (0, cmd(*k, **v), None)
             except Exception as e:
-                self.__ret = (1, e)
+                self.__ret = (1, e, format_exception(e))
         self.already_run = True
-    def wait(self, timeout=None):
+    def wait(self, timeout=None, raise_exception=True):
         timeout = self.__timeout if timeout is None else timeout
         assert self.already_run is True
         if self.use_fork_ and not self.already_wait:
@@ -119,7 +130,7 @@ class fork_class(fork_class_base):
             logger.debug('fork_class.wait,  my_pid %r waits for__other_pid %r, cmd %r , file %r .',
                          self.__my_pid, self.__other_pid, self.__cmd, self.tempfile_name)
             if timeout is not None:
-                logger.warning('Timeout ignored %r', timeout)
+                logger.warning('Timeout is not implemented in simple_tasks.fork_class')
             try:
                 pid_, exitstatus_ = os.waitpid(self.__other_pid, 0)
                 if pid_ != self.__other_pid:
@@ -134,7 +145,7 @@ class fork_class(fork_class_base):
                 import signal
                 self.__signal = sig = signal.Signals(-s)
                 a.append('Got signal %r.' % (sig,))
-                self.__ret = (2,  RuntimeError(' '.join(a)))
+                self.__ret = (2,  RuntimeError(' '.join(a)), None)
             else:
                 try:
                     with open(self.tempfile_name,'rb') as f:
@@ -146,17 +157,20 @@ class fork_class(fork_class_base):
                         (self.__my_pid, self.tempfile_name, self.__other_pid, E,)
                     a.append(m)
                     logger.warning(m)
-                    self.__ret = (2 , None) # overwritten below
+                    self.__ret = (2 , None, None) # overwritten below
                 if self.__ret[0] == 2:
                     a.append('Child did not terminate correctly (but no signal was detected), unknown exit status. ')
-                    self.__ret = (2 , RuntimeError(' '.join(a)) )
+                    self.__ret = (2 , RuntimeError(' '.join(a)), None)
             #
             self.__del()
             #
             if len(a)>1:
                 logger.error(' '.join(a))
-        if self.__ret[0] :
-            raise self.__ret[1]
+        if self.__ret[0]:
+            self.traceback_ = self.__ret[2]
+            self.exception_ = self.__ret[1]
+            if raise_exception:
+                raise self.__ret[1]
         return self.__ret[1]
     ## this is not __del__  
     def __del(self):
@@ -176,7 +190,7 @@ class nofork_class(fork_class_base):
     fork_type = 'nofork'
     def __init__(self, use_fork = True, timeout=None, queue=None):
         super().__init__(use_fork = use_fork)
-        self.__ret = (2 , RuntimeError('Program bug') )
+        self.__ret = (2 , RuntimeError('Program bug'), None)
         self.__pickle_exception = None
     #
     @staticmethod
@@ -186,14 +200,17 @@ class nofork_class(fork_class_base):
     def run(self, cmd, *k, **v):
         assert self.already_run is False
         try:
-            self.__ret = (0, cmd(*k, **v))
+            self.__ret = (0, cmd(*k, **v), None)
         except Exception as e:
-            self.__ret = (1, e)
+            self.__ret = (1, e, format_exception(e))
         self.already_run = True
-    def wait(self, timeout=None):
+    def wait(self, timeout=None,  raise_exception=True):
         assert self.already_run is True
         if self.__ret[0] :
-            raise self.__ret[1]
+            self.traceback_ = self.__ret[2]
+            self.exception_ = self.__ret[1]
+            if raise_exception:
+                raise self.__ret[1]
         return self.__ret[1]
 
 ########

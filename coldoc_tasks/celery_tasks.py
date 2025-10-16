@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
 
 from coldoc_tasks.simple_tasks import fork_class_base
-from coldoc_tasks.task_utils import _normalize_pythonpath
+from coldoc_tasks.task_utils import _normalize_pythonpath,  format_exception
 from coldoc_tasks.exceptions import *
 
 ####################### celery machinery
@@ -163,7 +163,11 @@ def status(celeryconfig_):
 
 def __celery_run_it(cmd, k, v):
     " internal function, to be wrapped for server and clients"
-    return cmd(*k, **v)
+    try:
+        ret = (0, cmd(*k, **v), None)
+    except Exception as E:
+        ret = (1, E, format_exception(E))
+    return ret
 
 def _get_run_it(celery_app):
     " get factotum function, wrapped for server and clients"
@@ -204,30 +208,32 @@ class fork_class(fork_class_base):
             self.__cmd = self.__celery_run_it.delay(cmd, k, v)
         else:
             try:
-                self.__ret = (0, cmd(*k, **v))
+                self.__ret = (0, cmd(*k, **v), None)
             except Exception as E:
-                self.__ret = (1, E)
+                self.__ret = (1, E, format_exception(E))
         self.already_run = True
     #
     def terminate(self):
         if self.use_fork_:
             self.__cmd.revoke(terminate=True)
     #
-    def wait(self, timeout=None):
+    def wait(self, timeout=None, raise_exception=True):
         timeout = self.__timeout if timeout is None else timeout
         assert self.already_run
         if self.use_fork_ and not self.already_wait:
             self.already_wait = True
             try:
                 with celery.result.allow_join_result():
-                    r = self.__cmd.get(timeout=timeout)
-                    self.__ret = (0, r)
+                    self.__ret = self.__cmd.get(timeout=timeout)
             except celery.exceptions.TaskRevokedError as E:
                 raise ColdocTasksProcessLookupError('Process %r terminated : %r' % ( self.__cmd_name, E) )
             except celery.exceptions.TimeoutError as E:
                 raise ColdocTasksTimeoutError('For cmd %r ' % ( self.__cmd_name, ) )
         if self.__ret[0] :
-            raise self.__ret[1]
+            self.traceback_ = self.__ret[2]
+            self.exception_ = self.__ret[1]
+            if raise_exception:
+                raise self.__ret[1]
         return self.__ret[1]
 
 def run_server(celeryconfig=None, with_django=None):

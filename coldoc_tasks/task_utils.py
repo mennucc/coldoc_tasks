@@ -432,3 +432,17 @@ def test_fork(fork_class, print_ = print):
         print_('=== all tests successful')
     return ret
 
+
+
+import traceback
+
+def format_exception(exc, *key, **val):
+    """
+    Return a formatted traceback string for an exception instance.
+    """
+    if sys.version_info >= (3, 10):
+        # ✅ Python 3.10+ form (exc only)
+        return traceback.format_exception(exc, *key, **val)
+    else:
+        # Older versions require (type, value, tb)
+        return traceback.format_exception(type(exc), exc, exc.__traceback__, *key, **val)
