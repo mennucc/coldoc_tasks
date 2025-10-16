@@ -37,7 +37,9 @@ class TestDaemon(unittest.TestCase):
     #
     def test_daemon(self):
         cc = os.path.join(sourcedir, 'etc', 'celeryconfig.py')
-        proc = coldoc_tasks.celery_tasks.tasks_daemon_autostart(cc)
+        self.logfile = tempfile.NamedTemporaryFile(delete=False,
+                                    prefix='celery_server_', suffix='.log')
+        proc = coldoc_tasks.celery_tasks.tasks_daemon_autostart(cc, opt=[], logfile=self.logfile)
         self.assertTrue( proc )
         #
         def noprint(*k, **v):
@@ -47,6 +49,7 @@ class TestDaemon(unittest.TestCase):
         self.assertTrue( ret == 0 )
         coldoc_tasks.celery_tasks.shutdown(cc)
         coldoc_tasks.task_utils.proc_join(proc)
+        os.unlink(self.logfile.name)
 
 
 if __name__ == '__main__':
