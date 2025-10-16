@@ -422,11 +422,11 @@ def run_server(address, authkey, infofile, **kwargs):
     run_with_subprocess = False
     #
     #
-    processes = {}
     server = None
     pools = {}
     # default pool
     pools[True] = default_pool = multiprocessing.pool.Pool()
+    processes = kwargs.get('processses', {})
     try:
         if with_django:
             os.environ.pop('COLDOC_TASKS_AUTOSTART', None)
