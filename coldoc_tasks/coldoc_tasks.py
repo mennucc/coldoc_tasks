@@ -452,6 +452,9 @@ def run_server(address, authkey, infofile, **kwargs):
         def stop_server__():
             logger.info('Received shutdown')
             __do_run.value = 0
+        def stop_server_now__():
+            logger.info('Received fast shutdown')
+            __do_run.value = -1
         #
         Nooone = (None, None, None)
         def run_cmd__(c, k, v, pipe=None, queue=None):
@@ -586,7 +589,7 @@ def run_server(address, authkey, infofile, **kwargs):
             logger.info('Start manager')
             manager.start()
             __do_run.value = 1
-            while __do_run.value:
+            while __do_run.value > 0:
                 time.sleep(0.1)
         else:
             logger.info('Start server')
