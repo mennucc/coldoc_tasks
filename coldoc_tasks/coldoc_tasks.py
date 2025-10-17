@@ -229,7 +229,7 @@ def wait(id_, manager):
         return __send_message(b'#WAIT', F)
 
 def get_result(id_, manager, timeout=None):
-    """ get command result , as a pair (status, result),
+    """ get command result , as a triple (status, result, traceback),
       where status is 0 or 1, 
       if status is 0, result is the result
       if status is 1, result contain the exception given by the command
