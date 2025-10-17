@@ -43,6 +43,8 @@ class TestDaemon(unittest.TestCase):
         self.assertTrue( info_ == info )
         self.assertTrue( proc )
         address, authkey, info_pid = CT.tasks_server_readinfo(info)[:3]
+        real_pid = CT.server_pid(address, authkey)
+        self.assertEqual(info_pid, real_pid)
         status =  CT.status(address, authkey)
         self.assertIsInstance(status, dict)
         #

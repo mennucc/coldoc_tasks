@@ -52,7 +52,12 @@ __doc__ = """
   django_ping
   
       ping server
-      
+
+  pid infofile
+  django_pid
+
+      PID of server process
+
 For each command, there is `django_..` version:
 this version initializes a django instance, and looks
 into the settings for all informations (see README.md):
@@ -100,7 +105,7 @@ from coldoc_tasks.task_utils import read_config, write_config, format_exception
 from coldoc_tasks.exceptions import *
 
 
-__all__ = ('get_manager', 'run_server', 'ping', 'status', 'shutdown', 'test', 'fork_class',
+__all__ = ('get_manager', 'run_server', 'ping', 'server_pid', 'status', 'shutdown', 'test', 'fork_class',
            'run_cmd', 'wait', 'get_result', 'join',
            'queue_cmd',
            'tasks_daemon_autostart', 'tasks_daemon_django_autostart',
@@ -110,7 +115,7 @@ __all__ = ('get_manager', 'run_server', 'ping', 'status', 'shutdown', 'test', 'f
 
 ##########################
 
-actions = ('ping__','status__','shutdown__',
+actions = ('ping__','getpid__','status__','shutdown__',
            'run_cmd__','get_result_join__','join__','get_wait_socket__',
            'terminate__')
 
@@ -330,6 +335,16 @@ def ping(address, authkey, warn=True):
         if warn:
             logger.warning('When pinging %r',E)
 
+def server_pid(address, authkey, warn=True):
+    try:
+        manager = get_manager(address, authkey)
+        F = manager.getpid__()
+        F = F._getvalue()
+        return F
+    except Exception as E:
+        if warn:
+            logger.warning('When getting PID %r',E)
+
 
 def status(address, authkey):
     try:
@@ -538,6 +553,9 @@ def run_server(address, authkey, infofile, **kwargs):
         def ping__():
             return True
         #
+        def getpid__():
+            return os.getpid()
+        #
         def join__(id_):
             logger.debug('joining  id = %r ',  id_)
             id_ = str(id_)
@@ -563,6 +581,7 @@ def run_server(address, authkey, infofile, **kwargs):
             manager.register('get_wait_socket__',get_wait_socket__)
             manager.register('terminate__',terminate__)
             manager.register('ping__',ping__)
+            manager.register('getpid__',getpid__)
             manager.register('status__',status__)
             if run_with_subprocess:
                 manager.register('shutdown__', stop_server__)
@@ -1081,6 +1100,10 @@ def main(argv):
     #
     if  'ping' == argv[0]:
         z = ping(address, authkey)
+        print(z)
+        return z
+    elif  'pid' == argv[0]:
+        z = server_pid(address, authkey)
         print(z)
         return z
     elif 'status' == argv[0]:
