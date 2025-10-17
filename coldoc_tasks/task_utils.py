@@ -19,9 +19,16 @@ def mylockfile(fil, timeout=None):
     " fake lockfile context "
     return contextlib.nullcontext()
 
+myLockTimeout = Exception
+mylockfile_other_exceptions = ()
+
 try:
     import lockfile
     mylockfile = lockfile.FileLock
+    myLockTimeout = lockfile.LockTimeout
+    mylockfile_other_exceptions = (lockfile.LockTimeout ,
+                                   lockfile.AlreadyLocked,
+                                   lockfile.LockFailed)
     #class    mylockfile(lockfile.FileLock):
 except ImportError:
     lockfile = None

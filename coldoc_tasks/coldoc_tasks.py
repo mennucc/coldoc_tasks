@@ -100,7 +100,7 @@ if __name__ == '__main__':
     
 
 from coldoc_tasks.simple_tasks import fork_class_base
-from coldoc_tasks.task_utils import _normalize_pythonpath, mychmod, proc_join, mylockfile
+from coldoc_tasks.task_utils import _normalize_pythonpath, mychmod, proc_join, mylockfile, myLockTimeout
 from coldoc_tasks.task_utils import read_config, write_config, format_exception
 from coldoc_tasks.exceptions import *
 
@@ -1007,10 +1007,14 @@ def tasks_daemon_autostart(infofile, **kwargs):
     if not os.path.isdir( os.path.dirname(infofile)):
         logger.warning("This infofile refers to a non-existant directory %r, cannot lock", infofile)
         return tasks_daemon_autostart_nolock(infofile, **kwargs)
+    timeout_ = kwargs.get('timeout', 2.0)
     ret = None, None
     try:
-        with mylockfile(infofile+'-autostart', timeout=2):
+        with mylockfile(infofile+'-autostart', timeout=timeout_):
             ret = tasks_daemon_autostart_nolock(infofile, **kwargs)
+    except myLockTimeout as E:
+        logger.error('lock timeout %r', E)
+        ret = False, E
     except Exception as E:
         logger.exception('while starting server')
         ret = False, E
