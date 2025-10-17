@@ -435,7 +435,7 @@ def run_server(address, authkey, infofile, **kwargs):
     #
     s = set(kwargs.keys()).difference(['default_tempdir','tempdir','with_django','logfile','pid','return_code'])
     if s:
-        logger.warning('Some kwargs where ignored: %r ', s)
+        logger.warning('Some kwargs were ignored: %r ', s)
     #
     manager = multiprocessing.managers.SyncManager(address=address, authkey=authkey)
     #
