@@ -43,6 +43,8 @@ class TestDaemon(unittest.TestCase):
         self.assertTrue( info_ == info )
         self.assertTrue( proc )
         address, authkey, info_pid = CT.tasks_server_readinfo(info)[:3]
+        status =  CT.status(address, authkey)
+        self.assertIsInstance(status, dict)
         #
         def noprint(*k, **v):
             pass

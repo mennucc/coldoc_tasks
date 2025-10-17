@@ -334,7 +334,9 @@ def ping(address, authkey, warn=True):
 def status(address, authkey):
     try:
         manager = get_manager(address, authkey)
-        return manager.status__()
+        F = manager.status__()
+        V = F._getvalue()
+        return V
     except Exception as E:
         logger.warning('When status %r',E)
 
