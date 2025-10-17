@@ -32,25 +32,25 @@ if __name__ == '__main__':
     if sourcedir not in sys.path:
         sys.path.insert(0, sourcedir)
 
-import coldoc_tasks.simple_tasks, coldoc_tasks.coldoc_tasks
+import coldoc_tasks.simple_tasks, coldoc_tasks.coldoc_tasks as CT
 
 class TestDaemon(unittest.TestCase):
     #
     def test_daemon(self):
         t = tempfile.NamedTemporaryFile(prefix='info_', delete=False)
         info = t.name
-        proc, info_ = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(infofile=info, logfile=True)
+        proc, info_ = CT.tasks_daemon_autostart(infofile=info, logfile=True)
         self.assertTrue( info_ == info )
         self.assertTrue( proc )
-        address, authkey = coldoc_tasks.coldoc_tasks.tasks_server_readinfo(info)[:2]
+        address, authkey, info_pid = CT.tasks_server_readinfo(info)[:3]
         #
         def noprint(*k, **v):
             pass
         #
-        err = coldoc_tasks.coldoc_tasks.test(address, authkey, print_=noprint)
+        err = CT.test(address, authkey, print_=noprint)
         self.assertTrue(err == 0)
         #
-        coldoc_tasks.coldoc_tasks.shutdown(address, authkey)
+        CT.shutdown(address, authkey)
         coldoc_tasks.task_utils.proc_join(proc)
         t.close()
         #print(t.name)
@@ -60,27 +60,27 @@ class TestDaemon(unittest.TestCase):
         t = tempfile.NamedTemporaryFile(prefix='info_', delete=False)
         info = t.name
         # start once, and stop
-        proc, info_ = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(infofile=info, logfile=True)
+        proc, info_ = CT.tasks_daemon_autostart(infofile=info, logfile=True)
         self.assertTrue( info_ == info )
         self.assertTrue( proc )
-        address, authkey = coldoc_tasks.coldoc_tasks.tasks_server_readinfo(info)[:2]
-        ping = coldoc_tasks.coldoc_tasks.ping(address, authkey)
+        address, authkey = CT.tasks_server_readinfo(info)[:2]
+        ping = CT.ping(address, authkey)
         self.assertTrue( ping )
-        coldoc_tasks.coldoc_tasks.shutdown(address, authkey)
+        CT.shutdown(address, authkey)
         coldoc_tasks.task_utils.proc_join(proc)
         # check that it is off
-        ping = coldoc_tasks.coldoc_tasks.ping(address, authkey, warn=False)
+        ping = CT.ping(address, authkey, warn=False)
         self.assertFalse( ping )
         # start again and stop again
-        proc, info_ = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(infofile=info, logfile=True)
+        proc, info_ = CT.tasks_daemon_autostart(infofile=info, logfile=True)
         self.assertTrue( info_ == info )
         self.assertTrue( proc )
-        address2, authkey2 = coldoc_tasks.coldoc_tasks.tasks_server_readinfo(info)[:2]
+        address2, authkey2 = CT.tasks_server_readinfo(info)[:2]
         self.assertTrue( address2 == address)
         self.assertTrue( authkey2 == authkey)
-        ping = coldoc_tasks.coldoc_tasks.ping(address, authkey)
+        ping = CT.ping(address, authkey)
         self.assertTrue( ping )
-        coldoc_tasks.coldoc_tasks.shutdown(address, authkey)
+        CT.shutdown(address, authkey)
         coldoc_tasks.task_utils.proc_join(proc)
         t.close()
         #print(open(info).read())
@@ -94,11 +94,11 @@ class TestDaemon(unittest.TestCase):
         # start
         def run1(l):
             log1 = tempfile.NamedTemporaryFile(prefix=l, delete=False)
-            proc1, info1 = coldoc_tasks.coldoc_tasks.tasks_daemon_autostart(infofile=info, logfile=log1.name)
+            proc1, info1 = CT.tasks_daemon_autostart(infofile=info, logfile=log1.name)
             self.assertTrue( info1 == info )
             self.assertTrue( proc1 )
-            address1, authkey1 = coldoc_tasks.coldoc_tasks.tasks_server_readinfo(info)[:2]
-            ping1 = coldoc_tasks.coldoc_tasks.ping(address1, authkey1)
+            address1, authkey1 = CT.tasks_server_readinfo(info)[:2]
+            ping1 = CT.ping(address1, authkey1)
             self.assertTrue( ping1 )
             return log1,proc1,info1,address1,authkey1,ping1
         
@@ -123,7 +123,7 @@ class TestDaemon(unittest.TestCase):
         self.assertEqual(authkey1, authkey2)
         
         ## stop
-        coldoc_tasks.coldoc_tasks.shutdown(address1, authkey1)
+        CT.shutdown(address1, authkey1)
         if not isinstance(proc1,int):
             # avoid an useless warning by joining the subprocess
             coldoc_tasks.task_utils.proc_join(proc1)
