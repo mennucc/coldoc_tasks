@@ -1000,7 +1000,8 @@ def tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
 def tasks_daemon_autostart(infofile, **kwargs):
     """ As tasks_daemon_autostart_nolock(), but adds a lock, to avoid race condition,
     i.e. starting two servers with same infofile;
-    in case of exception (such as lock timeout),  returns (`False`, exception) 
+    in case of exception (such as lock timeout),  returns (`False`, exception) ;
+    in case of timeout, returns (None, infofile)
     """
     assert isinstance(infofile, (str,bytes, Path))
     if not os.path.isdir( os.path.dirname(infofile)):
