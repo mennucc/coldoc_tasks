@@ -135,7 +135,8 @@ class TestForkColDoc(Base,unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         #
-        cls.tempdir = T = tempfile.mkdtemp()
+        cls.tempdir = T = tempfile.mkdtemp(prefix='test_fork_')
+        logger.info('TestForkColDoc uses % r', T)
         cls.address = osjoin(T,'socket')
         cls.authkey = os.urandom(9)
         cls.logger = logging.getLogger('coldoc_tasks')
