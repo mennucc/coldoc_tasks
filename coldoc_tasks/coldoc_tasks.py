@@ -982,6 +982,19 @@ def tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
                 jt = threading.Thread(target=proc.wait)
                 jt.start()
             proc = False
+            return proc, infofile
+        # check consistency
+        real_pid = server_pid(address, authkey)
+        end_t = time.time() + timeout
+        for repeat_n in range(int(float(timeout)*20.)):
+            info_ = tasks_server_readinfo(infofile)
+            info_pid = info_[2]
+            if info_pid == real_pid or (time.time() > end_t):
+                break
+            time.sleep(0.05)
+        if info_pid != real_pid:
+            logger.error('after timeout %f sec, server still inconsistent, %r == info_pid != real_pid == %r',
+                         timeout, info_pid, real_pid)
     return proc, infofile
 
 def tasks_daemon_autostart(infofile, **kwargs):
