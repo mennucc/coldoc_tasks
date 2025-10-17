@@ -22,8 +22,9 @@ def mylockfile(fil, timeout=None):
 try:
     import lockfile
     mylockfile = lockfile.FileLock
+    #class    mylockfile(lockfile.FileLock):
 except ImportError:
-    pass
+    lockfile = None
 
 ####
 
