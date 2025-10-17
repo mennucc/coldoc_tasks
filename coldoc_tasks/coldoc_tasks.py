@@ -1120,8 +1120,7 @@ def main(argv):
         print(z)
         return z
     elif 'status' == argv[0]:
-        manager = get_manager(address, authkey)
-        print(str(manager.status__()))
+        print(status(address, authkey))
         return True
     elif 'test' == argv[0] :
         err = test(address, authkey)
