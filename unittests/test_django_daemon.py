@@ -47,6 +47,7 @@ class TestDjangoDaemon(unittest.TestCase):
     #
     @classmethod
     def setUpClass(cls):
+        tmpdir = cls.tmpdir = tempfile.mkdtemp(prefix='test_django_daemon_')
         a = os.path.join(sourcedir, 'django_test')
         pp = os.environ.get('PYTHONPATH','').split(os.pathsep)
         if a not in pp:
@@ -57,8 +58,27 @@ class TestDjangoDaemon(unittest.TestCase):
         os.environ['DJANGO_SETTINGS_MODULE'] = 'django_test.settings'
         django.setup()
         from django.conf import settings
+        settings.COLDOC_TASKS_INFOFILE = os.path.join(tmpdir, 'infofile')
+        settings.COLDOC_TASKS_LOGFILE = os.path.join(tmpdir, 'server.log')
+        # create also sqlite db in tmpdir
+        default_db = settings.DATABASES['default']
+        if 'sqlite3' in default_db['ENGINE']:
+            default_db['NAME'] = os.path.join(tmpdir,  'db.sqlite3')
+        # TODO COPY template?
+        # shutil.copy(src,settings.COLDOC_TASKS_INFOFILE)
         cls.settings = settings
         cls.info = getattr(settings, 'COLDOC_TASKS_INFOFILE', None)
+    @classmethod
+    def tearDownClass(cls):
+        # remove
+        try:
+            address, authkey = coldoc_tasks.coldoc_tasks.tasks_server_readinfo(cls.info)[:2]
+            coldoc_tasks.coldoc_tasks.shutdown(address, authkey)
+        except Exception as E:
+            logger.warning(' no server to stop at %r, %r', cls.info, E)
+        #logger.warning(' you should remove %r', cls.tmpdir)
+        shutil.rmtree(cls.tmpdir)
+        pass
     #
     def test_daemon(self):
         proc, info_ = coldoc_tasks.coldoc_tasks.tasks_daemon_django_autostart(self.settings)
