@@ -151,7 +151,7 @@ class TestForkColDoc(Base,unittest.TestCase):
                                                                     )
             if not cls.proc:
                 cls.logger.critical("could not start server! log follows \n" + ('v' * 70) +\
-                                    open(logfile.name).read() + '\n' +  ('^' * 70))
+                                    open(cls.logfile.name).read() + '\n' +  ('^' * 70))
                 raise Exception("could not start server")
         else:
             target = coldoc_tasks.coldoc_tasks.run_server
