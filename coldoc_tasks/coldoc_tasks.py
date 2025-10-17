@@ -323,7 +323,9 @@ class fork_class(fork_class_base):
 def ping(address, authkey, warn=True):
     try:
         manager = get_manager(address, authkey)
-        return manager.ping__()
+        F = manager.ping__()
+        F = F._getvalue()
+        return F
     except Exception as E:
         if warn:
             logger.warning('When pinging %r',E)
