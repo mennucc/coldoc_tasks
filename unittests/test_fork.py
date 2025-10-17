@@ -74,16 +74,16 @@ class Base(object):
         else:
             self.fail("ZeroDivisionError was not raised")
         logger.debug('remote traceback %r', subproc.traceback)
-        self.assertTrue(isinstance(subproc.exception, ZeroDivisionError))
-        self.assertTrue(isinstance(subproc.traceback, list))
+        self.assertIsInstance(subproc.exception, ZeroDivisionError)
+        self.assertIsInstance(subproc.traceback, list)
  
     def test_fork_doesnt_raise(self):
         subproc = self.fork_class()
         subproc.run(fakediv, 1, 0)
         r = subproc.wait(raise_exception=False)
-        self.assertTrue(isinstance(subproc.exception, ZeroDivisionError))
+        self.assertIsInstance(subproc.exception, ZeroDivisionError)
         self.assertTrue(subproc.exception == r)
-        self.assertTrue(isinstance(subproc.traceback, list))
+        self.assertIsInstance(subproc.traceback, list)
 
     def test_nofork(self):
         subproc = self.fork_class(use_fork=False)
@@ -98,8 +98,8 @@ class Base(object):
         subproc.run(fakediv, 1, 0)
         with self.assertRaises(ZeroDivisionError):
             r = subproc.wait()
-        self.assertTrue(isinstance(subproc.exception, ZeroDivisionError))
-        self.assertTrue(isinstance(subproc.traceback, list))
+        self.assertIsInstance(subproc.exception, ZeroDivisionError)
+        self.assertIsInstance(subproc.traceback, list)
 
     def test_reentrant(self):
         N = 2
