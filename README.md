@@ -40,7 +40,7 @@ Tests
 
 The code is tested
 [using  *GitHub actions*](https://github.com/mennucc/coldoc_tasks/actions/workflows/test.yaml)
-inside an Ubuntu environment, for Python 3.8 up to 3.14
+inside an Ubuntu environment, for Python 3.8 up to 3.13 (but not yet with 3.14).
 
 ![Test results](https://github.com/mennucc/coldoc_tasks/actions/workflows/test.yaml/badge.svg)
 
