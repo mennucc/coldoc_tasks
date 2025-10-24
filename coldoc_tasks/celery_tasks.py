@@ -302,7 +302,7 @@ def tasks_daemon_autostart(celeryconfig,
         opt = opt.split(',')
     if 'nocheck' not in opt:
         ok = celery_server_check(celeryconfig)
-        logger.debug('A daemon is alread running')
+        logger.debug('A daemon is already running')
         if ok:
             return True
     #
