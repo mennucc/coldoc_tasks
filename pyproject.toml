@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "coldoc_tasks"
 version = "0.2"
 authors = [
-  { name="Andrea C. G. Mennucci", email="author@example.com" },
+  { name="Andrea C. G. Mennucci", email="mennucc1@debian.org" },
 ]
 description = "ColDoc Task Server"
 readme = "README.rst"
