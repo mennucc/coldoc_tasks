@@ -18,7 +18,7 @@ def autostart(sett_):
     opt = realopt.split(',')
     if 'all' in opt:
         opt = all_fork_classes
-    elif set(opt).difference_update(all_fork_classes):
+    elif set(opt).difference(all_fork_classes):
         logger.error('COLDOC_TASKS_AUTOSTART environ %r contains keywords not in %r',
                   opt,all_fork_classes)
     if not hasattr(sett_, 'COLDOC_TASKS_AUTOSTART'):
@@ -26,7 +26,7 @@ def autostart(sett_):
         return
     autostart = getattr(sett_, 'COLDOC_TASKS_AUTOSTART','')
     autostart=autostart.split(',')
-    if set(autostart).difference_update(all_fork_classes):
+    if set(autostart).difference(all_fork_classes):
         logger.error('setting COLDOC_TASKS_AUTOSTART %r contains keywords not in %r',
                   autostart,all_fork_classes)
     #

@@ -222,9 +222,8 @@ def _choose_best_fork_class(infofile=None, celeryconfig=None,
     #
     if isinstance(preferences, str):
         preferences = preferences.split(',')
-    a = set(preferences).difference_update(all_fork_classes)
-    if a:
-        logger.error('`preferences` contains unknown classes: %r ', a)
+    if set(preferences).difference(all_fork_classes):
+        logger.error('`preferences` contains unknown classes: %r ', set(preferences).difference(all_fork_classes))
     ok = False
     for j in preferences:
         if celery and celeryconfig and j == 'celery':
