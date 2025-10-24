@@ -1,6 +1,5 @@
 import sys, os, signal, tempfile, pickle, logging, functools
 
-import logging
 logger = logging.getLogger(__name__)
 
 from .task_utils import format_exception
