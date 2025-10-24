@@ -428,7 +428,7 @@ def main(argv):
                                       pythonpath=(sourcedir,))
         if not proc:
                 logger.critical("could not start server! log follows \n" + ('v' * 70) +\
-                                open(logfile.name).read() + '\n' +  ('^' * 70))
+                                open(logfile).read() + '\n' +  ('^' * 70))
                 return False
         elif proc is True:
             print('already started')
