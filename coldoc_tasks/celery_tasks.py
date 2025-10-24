@@ -105,7 +105,7 @@ def _get_client(celeryconfig_, mtime = None):
     elif inspect.iscode(celeryconfig_):
         celeryconfig = import_module_from_string('celeryconfig', celeryconfig_)
     else:
-        raise RuntimeError('Cannot load celeryconfig. Unsupporte type is %r %r' %( type(celeryconfig_), celeryconfig_))
+        raise RuntimeError('Cannot load celeryconfig. Unsupporte type is {!r} {!r}'.format(type(celeryconfig_), celeryconfig_))
     #
     assert inspect.ismodule(celeryconfig)
     celery_app = celery.Celery('coldoc_celery_tasks')
@@ -226,9 +226,9 @@ class fork_class(fork_class_base):
                 with celery.result.allow_join_result():
                     self.__ret = self.__cmd.get(timeout=timeout)
             except celery.exceptions.TaskRevokedError as E:
-                raise ColdocTasksProcessLookupError('Process %r terminated : %r' % ( self.__cmd_name, E) )
+                raise ColdocTasksProcessLookupError('Process {!r} terminated : {!r}'.format(self.__cmd_name, E))
             except celery.exceptions.TimeoutError as E:
-                raise ColdocTasksTimeoutError('For cmd %r ' % ( self.__cmd_name, ) )
+                raise ColdocTasksTimeoutError('For cmd {!r}'.format(self.__cmd_name))
         if self.__ret[0] :
             self.traceback_ = self.__ret[2]
             self.exception_ = self.__ret[1]
@@ -406,7 +406,7 @@ def main(argv):
         if os.environ.get('DJANGO_SETTINGS_MODULE') == 'ColDocDjango.settings':
             f = fork_class(celeryconfig=celeryconfig_)
             f.run(__countthem)
-            print('---- test of reading the Django database: there are %d DMetadata objects' % f.wait())
+            print('---- test of reading the Django database: there are {} DMetadata objects'.format(f.wait()))
         return ret == 0
     elif  'start' == argv[0] :
         return run_server(celeryconfig=argv[1])
@@ -433,7 +433,7 @@ def main(argv):
         elif proc is True:
             print('already started')
         elif getattr(proc,'pid'):
-            print('started as pid: %r' % proc.pid)
+            print('started as pid: {!r}'.format(proc.pid))
         else:
             assert False
         return True

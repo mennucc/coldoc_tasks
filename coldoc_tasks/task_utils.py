@@ -76,21 +76,21 @@ def write_config(infofile, db, sdb=[], rewrite_old = False):
                 v = v.encode('utf8')
                 v = base64.b64encode(v)
                 v = v.decode()
-                F.write('%s/64s=%s\n' % (k, v) )
+                F.write('{}/64s={}\n'.format(k, v))
             else:
-                F.write('%s=%s\n' % (k,v))
+                F.write('{}={}\n'.format(k,v))
         elif isinstance(v, bool) or v is None:
-            F.write('%s/r=%r\n'% (k,v))
+            F.write('{}/r={!r}\n'.format(k,v))
         elif isinstance(v,int):
-            F.write('%s/i=%d\n'% (k,v))
+            F.write('{}/i={}\n'.format(k,v))
         elif isinstance(v,float):
-            F.write('%s/f=%r\n'% (k,v))
+            F.write('{}/f={!r}\n'.format(k,v))
         elif isinstance(v,bytes):
-            F.write('%s/32=%s\n'  % (k, base64.b32encode(v).decode('ascii')))
+            F.write('{}/32={}\n'.format(k, base64.b32encode(v).decode('ascii')))
         #elif v == eval(repr(v)):
-        #    F.write('%s/f=%r\n'% (k,v))
+        #    F.write('{}/f={!r}\n'.format(k,v))
         else:
-            F.write('%s/64p=%s\n' % (k, base64.b64encode(pickle.dumps(v)).decode('ascii')))
+            F.write('{}/64p={}\n'.format(k, base64.b64encode(pickle.dumps(v)).decode('ascii')))
     #
     db = copy.copy(db)
     # write keys that were in file, in same position
@@ -199,7 +199,7 @@ def proc_join(proc):
             #    logger.error(' pid %r  != proc %r ', pid, proc)
             if pid == proc and ( os.WIFEXITED(wstatus) or os.WIFSIGNALED(wstatus) ):
                  return
-            logger.info('waitpid(%r) returned pid %r status %r ; waiting more' % (proc, pid, wstatus))
+            logger.info('waitpid(%r) returned pid %r status %r ; waiting more', proc, pid, wstatus)
             time.sleep(0.5)
     elif hasattr(proc, 'join'):
         proc.join()
@@ -223,7 +223,7 @@ def _choose_best_fork_class(infofile=None, celeryconfig=None,
     if isinstance(preferences, str):
         preferences = preferences.split(',')
     if set(preferences).difference(all_fork_classes):
-        logger.error('`preferences` contains unknown classes: %r ', set(preferences).difference(all_fork_classes))
+        logger.error('`preferences` contains unknown classes: %r', set(preferences).difference(all_fork_classes))
     ok = False
     for j in preferences:
         if celery and celeryconfig and j == 'celery':
@@ -289,11 +289,11 @@ class choose_best_fork_class(object):
             ( t > self.time_choice + self.refresh_time_interval)
         if not refresh and self.infofile_mtime and self.infofile_mtime != os.path.getmtime(self.infofile):
             self.infofile_mtime = os.path.getmtime(self.infofile)
-            logger.info('infofile was changed: %r',self.infofile)
+            logger.info('infofile was changed: %r', self.infofile)
             refresh = True
         if not refresh and self.celeryconfig_mtime and self.celeryconfig_mtime != os.path.getmtime(self.celeryconfig):
             self.celeryconfig_mtime = os.path.getmtime(self.celeryconfig)
-            logger.info('celeryconfig was changed: %r',self.celeryconfig)
+            logger.info('celeryconfig was changed: %r', self.celeryconfig)
             refresh = True
         #
         if refresh:
@@ -328,10 +328,10 @@ def __fork_reentrat_test(fork_class, depth = 3,  sleep=0.1):
     assert isinstance(depth,int) and depth >= 0
     f = fork_class()
     if depth > 0:
-        logger.info(' reentring at depth %d',depth)
+        logger.info(' reentring at depth %d', depth)
         f.run(__fork_reentrat_test, fork_class, depth -1, sleep)
     elif sleep > 0:
-        logger.info(' sleeping at depth 0 for %g', sleep)
+        logger.info(' sleeping at depth 0 for %r', sleep)
         f.run(time.sleep, sleep)
     else:
         logger.info(' raising ValueError at depth 0')
@@ -350,14 +350,14 @@ def test_fork(fork_class, print_ = print):
         s = pickle.dumps(f)
         f = pickle.loads(s)
     except Exception as E:
-        print_('** cannot pickle : %r' % E)
+        print_('** cannot pickle : {!r}'.format(E))
         ret += 1
     r = f.wait()
     if r != '3.14':
         ret += 1
-        print_('Returned wrong value %r ' % (r,))
+        print_('Returned wrong value {!r}'.format(r))
     else:
-        print_('Returned %r ' % (r,))
+        print_('Returned {!r}'.format(r))
     #
     if 1:
         print_("==== test : subprocess raises exception")
@@ -368,7 +368,7 @@ def test_fork(fork_class, print_ = print):
         except  ZeroDivisionError:
             print_('caught')
         else:
-            print_('WRONG: Returned  %r' % (r,))
+            print_('WRONG: Returned  {!r}'.format(r))
             ret += 1
     #
     if ret:
@@ -376,7 +376,7 @@ def test_fork(fork_class, print_ = print):
     else:
         N = 2
         D = 4
-        print_("======= test : check against self locking, instances = %d depth = %d" %(N,D))
+        print_("======= test : check against self locking, instances = {} depth = {}".format(N,D))
         print_("== scheduling")
         ff = list(range(N))
         for j in range(N):
@@ -389,38 +389,38 @@ def test_fork(fork_class, print_ = print):
                 r = ff[j].wait(timeout = 0.3)
             except ValueError as E:
                 if not j:
-                    print_(' Caught %r, as expected ' % E)
+                    print_(' Caught {!r}, as expected'.format(E))
                 else:
-                    print_('Failure %r' % (E,))
+                    print_('Failure {!r}'.format(E))
                     ret += 1
             except Exception as E:
                 ret += 1
-                print_('Failure %r' % (E,))
+                print_('Failure {!r}'.format(E))
             else:
                 if r != 'happy' :
-                    print_('Wrong return value %r' % (r,))
+                    print_('Wrong return value {!r}'.format(r))
     #
     if ret:
         print_(' ** skipping speed test, already errors')
     else:
         N = 256
         t = time.time()
-        print_("======= speed test instances = %d " %(N,))
+        print_("======= speed test instances = {}".format(N))
         print_("== scheduling")
         ff = list(range(N))
         for j in range(N):
-            #sys.stderr.write('\r %d  \r' % (j,))
+            #sys.stderr.write('\r {}  \r'.format(j))
             ff[j] = fork_class()
             ff[j].run(int,'4')
-        print_("== scheduling , time per instance %g sec" % ((time.time() - t) / N))
+        print_("== scheduling , time per instance {!r} sec".format((time.time() - t) / N))
         print_("== waiting")
         for j in range(N):
-            #sys.stderr.write('\r %d  \r' % (j,))
+            #sys.stderr.write('\r {}  \r'.format(j))
             r = ff[j].wait()
             if r != 4:
                 ret += 1
         t = time.time() - t
-        print_("======= speed test, fork_type %r, total time per instance %g sec " % (ff[0].fork_type, t / N,))
+        print_("======= speed test, fork_type {!r}, total time per instance {!r} sec".format(ff[0].fork_type, t / N))
     #
     if f.use_fork and hasattr(fork_class,'terminate'):
         print_("==== test : terminate subprocess")
@@ -431,9 +431,9 @@ def test_fork(fork_class, print_ = print):
         try:
             r = f.wait()
         except RuntimeError as R:
-            print_('As expected, raised: %r ' % (R,))
+            print_('As expected, raised: {!r}'.format(R))
         else:
-            print_('WRONG: Returned  %r' % (r,))
+            print_('WRONG: Returned  {!r}'.format(r))
             ret += 1
     if ret:
         print_('=== some tests failed')

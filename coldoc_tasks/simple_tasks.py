@@ -125,7 +125,7 @@ class fork_class(fork_class_base):
         timeout = self.__timeout if timeout is None else timeout
         assert self.already_run is True
         if self.use_fork_ and not self.already_wait:
-            a = [('fork_class, cmd %r pid %r.' % (self.__cmd, self.__other_pid))]
+            a = [('fork_class, cmd {!r} pid {!r}.'.format(self.__cmd, self.__other_pid))]
             logger.debug('fork_class.wait,  my_pid %r waits for__other_pid %r, cmd %r , file %r .',
                          self.__my_pid, self.__other_pid, self.__cmd, self.tempfile_name)
             if timeout is not None:
@@ -143,7 +143,7 @@ class fork_class(fork_class_base):
             if s < 0:
                 import signal
                 self.__signal = sig = signal.Signals(-s)
-                a.append('Got signal %r.' % (sig,))
+                a.append('Got signal {!r}.'.format(sig))
                 self.__ret = (2,  RuntimeError(' '.join(a)), None)
             else:
                 try:
@@ -152,8 +152,8 @@ class fork_class(fork_class_base):
                     self.os_unlink(self.tempfile_name)
                 except Exception as E:
                     self.__pickle_exception = E
-                    m = 'In pid %r cannot read exit status %r for pid %r: %s ' % \
-                        (self.__my_pid, self.tempfile_name, self.__other_pid, E,)
+                    m = 'In pid {!r} cannot read exit status {!r} for pid {!r}: {}'.format(
+                        self.__my_pid, self.tempfile_name, self.__other_pid, E)
                     a.append(m)
                     logger.warning(m)
                     self.__ret = (2 , None, None) # overwritten below
@@ -227,9 +227,9 @@ def main(argv):
         sys.exit(1 if ret else 0)
     else:
         print(""" Commands:
-%s test
+{} test
 
-""" % (sys.argv[0],))
+""".format(sys.argv[0]))
 
 
 if __name__ == '__main__':

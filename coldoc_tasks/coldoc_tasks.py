@@ -189,14 +189,14 @@ def __send_message(m, F, timeout=None):
         a = s.recv(5)
         if a == b'#AUTH':
             if auth is None:
-                raise RuntimeError('Auth is required for %r' % F)
+                raise RuntimeError('Auth is required for {!r}'.format(F))
             s.sendall(auth)
             a = s.recv(5)
         if a != b'#HELO':
             if auth:
-                raise RuntimeError('Wrong Auth for %r' % F)
+                raise RuntimeError('Wrong Auth for {!r}'.format(F))
             else:
-                raise RuntimeError('Unexpected hello %r from %r', a, F)
+                raise RuntimeError('Unexpected hello {!r} from {!r}'.format(a, F))
         s.sendall(m)
         if m == b'#SEND':
             l = s.recv(8)
@@ -280,7 +280,7 @@ class fork_class(fork_class_base):
     def run(self, cmd, *k, **v):
         assert self.already_run is False
         self.__cmd_name = cmd.__name__
-        self.__ret = (2, RuntimeError('Process %r : could not read its return value' % ( self.__cmd_name,) ), None)
+        self.__ret = (2, RuntimeError('Process {!r} : could not read its return value'.format(self.__cmd_name)), None)
         if self.use_fork_:
             if self.__manager is None:
                 self.__manager = get_manager(self.__address, self.__authkey)
@@ -309,12 +309,12 @@ class fork_class(fork_class_base):
             try:
                 self.__ret = get_result(self.__cmd_id, self.__manager, timeout=timeout)
                 if self.__ret is None:
-                    raise ColdocTasksTimeoutError('Process has disappeared: %s',self.__cmd_id)
+                    raise ColdocTasksTimeoutError('Process has disappeared: {}'.format(self.__cmd_id))
                 self.__manager.join__(self.__cmd_id)
             except socket.timeout as E:
-                raise ColdocTasksTimeoutError('timeout on %r : %r' % (self.__cmd_id, E) )
+                raise ColdocTasksTimeoutError('timeout on {!r} : {!r}'.format(self.__cmd_id, E))
             except Exception as E:
-                raise RuntimeError('Process %r exception on wait : %r' % ( self.__cmd_name, E) )
+                raise RuntimeError('Process {!r} exception on wait : {!r}'.format(self.__cmd_name, E))
         if self.__ret[0] :
             self.traceback_ = self.__ret[2]
             self.exception_ = self.__ret[1]
@@ -333,7 +333,7 @@ def ping(address, authkey, warn=True):
         return F
     except Exception as E:
         if warn:
-            logger.warning('When pinging %r',E)
+            logger.warning('When pinging %r', E)
 
 def server_pid(address, authkey, warn=True):
     try:
@@ -343,7 +343,7 @@ def server_pid(address, authkey, warn=True):
         return F
     except Exception as E:
         if warn:
-            logger.warning('When getting PID %r',E)
+            logger.warning('When getting PID %r', E)
 
 
 def status(address, authkey):
@@ -353,14 +353,14 @@ def status(address, authkey):
         V = F._getvalue()
         return V
     except Exception as E:
-        logger.warning('When status %r',E)
+        logger.warning('When status %r', E)
 
 def shutdown(address, authkey):
     try:
         manager = get_manager(address, authkey)
         return manager.shutdown__()
     except Exception as E:
-        logger.warning('When shutdown %r',E)
+        logger.warning('When shutdown %r', E)
 
 def test(address, authkey, print_=print):
     import coldoc_tasks.task_utils as task_utils
@@ -376,7 +376,7 @@ def test(address, authkey, print_=print):
     if os.environ.get('DJANGO_SETTINGS_MODULE') == 'ColDocDjango.settings':
         f = FC()
         f.run(__countthem)
-        print_('---- test of reading the Django database: there are %r DMetadata objects' % f.wait())
+        print_('---- test of reading the Django database: there are {!r} DMetadata objects'.format(f.wait()))
     return err
 
 
@@ -430,7 +430,7 @@ def run_server(address, authkey, infofile, **kwargs):
         h.setFormatter(f)
         logger.addHandler(h)
         #logger.setLevel(logging.INFO)
-        logger.info('Start log, pid %r',  os.getpid())
+        logger.info('Start log, pid %r', os.getpid())
         kwargs['logfile'] = logfile
     #
     s = set(kwargs.keys()).difference(['default_tempdir','tempdir','with_django','logfile','pid','return_code'])
@@ -512,34 +512,34 @@ def run_server(address, authkey, infofile, **kwargs):
             pipe0 = pipe[0]
             #pipe0._config['authkey'] = bytes(pipe0._config['authkey'])
             processes[id_] = (proc, pipe0, access_pair_)
-            logger.debug('Running cmd %r ( %r , %r ), id = %r, socket = %r', c,  k, v, id_, F)
+            logger.debug('Running cmd %r ( %r , %r ), id = %r, socket = %r', c, k, v, id_, F)
             return id_
         #
         def get_wait_socket__(id_):
             id_ = str(id_)
-            logger.debug('getting result pipe for  id = %r ',  id_)
+            logger.debug('getting result pipe for  id = %r ', id_)
             proc, pipe, F = processes.get(id_, Nooone)
             return F
         #
         def get_result_join__(id_):
-            logger.debug('getting result for  id = %r ',  id_)
+            logger.debug('getting result for  id = %r ', id_)
             id_ = str(id_)
             proc, pipe, F = processes.pop(id_, Nooone)
             if proc is not None:
                 try:
-                    logger.info('Waiting for result id = %r',  id_)
+                    logger.info('Waiting for result id = %r', id_)
                     r = __send_message(b'#SEND', F) #get_result(id_) #pipe.recv()
                     __send_message(b'#QUIT', F)
                     proc_join(proc)
                 except  Exception as E:
                     r = (1, E)
             else:
-                logger.error('No process by id %r',id_)
-                r = (1, RuntimeError('No process by id %r' % id_))
+                logger.error('No process by id %r', id_)
+                r = (1, RuntimeError('No process by id {!r}'.format(id_)))
             return r
         #
         def terminate__(id_):
-            logger.debug('getting result for  id = %r ',  id_)
+            logger.debug('getting result for  id = %r ', id_)
             id_ = str(id_)
             proc, pipe, F = processes.pop(id_, Nooone)
             if proc is not None:
@@ -557,12 +557,12 @@ def run_server(address, authkey, infofile, **kwargs):
             return os.getpid()
         #
         def join__(id_):
-            logger.debug('joining  id = %r ',  id_)
+            logger.debug('joining  id = %r ', id_)
             id_ = str(id_)
             proc, pipe, F = processes.pop(id_, Nooone)
             if proc is not None:
                 try:
-                    logger.info('Joining id = %r',  id_)
+                    logger.info('Joining id = %r', id_)
                     sent = __send_message(b'#SENT', F)
                     if not sent:
                         logger.critical('The result of process %s was never recovered', id_)
@@ -571,7 +571,7 @@ def run_server(address, authkey, infofile, **kwargs):
                 except  Exception as E:
                     logger.exception('Unexpected exception from id_ %r : %r', id_, E)
             else:
-                logger.error('No process by id %r',id_)
+                logger.error('No process by id %r', id_)
         #
         def initializer():
             a = set(copy.deepcopy(manager._registry))
@@ -717,7 +717,7 @@ def tasks_server_start(infofile, address=None, authkey=None,
         logger.warning(' `default_tempdir` ignored in infofile %r ', infofile)
     for k in other:
         if k not in kwargs:
-            logger.warning(' `%r` unused in infofile %r ', k, infofile)
+            logger.warning(' %r unused in infofile %r ', k, infofile)
             kwargs[k] = other[k]
     lock = mylockfile(infofile, timeout=2)
     ret = None
@@ -751,7 +751,7 @@ def task_server_check(info):
     if os.path.isfile(info):
         sock, auth, pid = tasks_server_readinfo(info)[:3]
         if not( sock and auth):
-            logger.info('One of address, authkey is missing from %r',info)
+            logger.info('One of address, authkey is missing from %r', info)
             return False, sock, auth, pid
         if psutil and pid and not psutil.pid_exists(pid):
             logger.warning('Tasks server pid %r does not exist', pid)
@@ -865,7 +865,7 @@ def tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
       """
     #
     if kwargs:
-        logger.warning('Some kwargs were ignored: %r',kwargs)
+        logger.warning('Some kwargs were ignored: %r', kwargs)
     #
     ok = False
     if opt is None:
@@ -879,9 +879,9 @@ def tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
         if not ok and sock_ and os.path.exists(sock_):
             try:
                 os.unlink(sock_)
-                logger.warning('Removed stale socket %r (pid %r) ', sock_, pid_ )
+                logger.warning('Removed stale socket %r (pid %r) ', sock_, pid_)
             except Exception as E:
-                logger.exception('While removing stale socket %r (pid %r) ', sock_, pid_ )
+                logger.exception('While removing stale socket %r (pid %r) ', sock_, pid_)
     else:
         sock_ = auth_ = pid_  = None,
     #
@@ -889,10 +889,10 @@ def tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
         force = 'force' in opt
     if force and not ok:
         if isinstance(infofile,str)  and os.path.exists(infofile+'.lock'):
-            logger.warning('Removing stale lock %r', (infofile+'.lock',))
+            logger.warning('Removing stale lock %r', infofile+'.lock')
             os.unlink(infofile+'.lock')
         if isinstance(sock_,str) and os.path.exists(sock_):
-            logger.warning('Removing stale socket %r', (sock_,))
+            logger.warning('Removing stale socket %r', sock_)
             os.unlink(sock_)
     # this does not work OK
     use_multiprocessing=False
@@ -993,7 +993,7 @@ def tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
                 break
             time.sleep(0.05)
         if info_pid != real_pid:
-            logger.error('after timeout %f sec, server still inconsistent, %r == info_pid != real_pid == %r',
+            logger.error('after timeout %g sec, server still inconsistent, %r == info_pid != real_pid == %r',
                          timeout, info_pid, real_pid)
     return proc, infofile
 
@@ -1062,8 +1062,7 @@ def main(argv):
                 d = j
                 break
         if not d:
-            logger.error('Environmental variable DJANGO_SETTINGS_MODULE references a non exixtent file %r. sys.path is\n' +\
-                         str(sys.path) +    '\nTry setting PYTHONPATH',a)
+            logger.error('Environmental variable DJANGO_SETTINGS_MODULE references a non exixtent file %r. sys.path is\n%s\nTry setting PYTHONPATH', a, str(sys.path))
         #
         # for people hooking this package into Django, this will avoid a recursive server starting
         os.environ['COLDOC_TASKS_AUTOSTART_OPTIONS'] =  'noautostart'
