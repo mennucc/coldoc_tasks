@@ -1,3 +1,3 @@
-[submodule "sub/plain_config"]
-	path = sub/plain_config
-	url = git@github.com:mennucc/plain_config.git
+[submodule "sub/plain-config"]
+	path = sub/plain-config
+	url = git@github.com:mennucc/plain-config.git
