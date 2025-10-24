@@ -448,7 +448,7 @@ import traceback
 
 def format_exception(exc, *key, **val):
     """
-    Return a formatted traceback string for an exception instance.
+    Return a formatted traceback list of strings for an exception instance.
     """
     if sys.version_info >= (3, 10):
         # ✅ Python 3.10+ form (exc only)
