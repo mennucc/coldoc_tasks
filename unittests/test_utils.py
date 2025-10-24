@@ -32,7 +32,6 @@ example_db = {
     'stringo' : 'hello',
     'texto' : 'hi\n how are you\n',
     'byteo' : b'there',
-    'typo' : TU.choose_best_fork_class,
     'bolleo1' : True,
     'nonno' : None,
 }
@@ -47,7 +46,6 @@ floato/f=3.141
 stringo=hello
 texto/64s=aGkKIGhvdyBhcmUgeW91Cg==
 byteo/32=ORUGK4TF
-typo/64p=gASVNgAAAAAAAACMF2NvbGRvY190YXNrcy50YXNrX3V0aWxzlIwWY2hvb3NlX2Jlc3RfZm9ya19jbGFzc5STlC4=
  
 # final comment
 """
