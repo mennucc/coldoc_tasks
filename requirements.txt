@@ -1,3 +1,4 @@
+plain-config @ git+https://github.com/mennucc/plain-config.git
 celery[redis]>=5
 lockfile
 psutil

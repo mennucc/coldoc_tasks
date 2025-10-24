@@ -101,7 +101,8 @@ if __name__ == '__main__':
 
 from coldoc_tasks.simple_tasks import fork_class_base
 from coldoc_tasks.task_utils import _normalize_pythonpath, mychmod, proc_join, mylockfile, myLockTimeout
-from coldoc_tasks.task_utils import read_config, write_config, format_exception
+from coldoc_tasks.task_utils import format_exception
+import plain_config
 from coldoc_tasks.exceptions import *
 
 
@@ -669,7 +670,7 @@ def tasks_server_readinfo(infofile):
     ret = [None] * (1+ len(infofile_keywords) )
     lock = mylockfile(infofile+'-rw')
     with lock:
-        db, sdb = read_config(infofile)
+        db, sdb = plain_config.read_config(infofile)
     for n,k in enumerate(infofile_keywords):
         if k in db:
             ret [ n ] = db.pop(k)
@@ -688,10 +689,10 @@ def tasks_server_writeinfo(infofile, *args, **kwargs):
     lock = mylockfile(infofile+'-rw')
     with lock:
         if infofile and os.path.exists(infofile):
-            db, sdb = read_config(infofile)
+            db, sdb = plain_config.read_config(infofile)
         else:
             sdb = []
-        ret = write_config(infofile, kw, sdb, rewrite_old=True)
+        ret = plain_config.write_config(infofile, kw, sdb, rewrite_old=True)
     return ret
 
 def __tasks_server_start_nolock(infofile, address, authkey, **kwargs):

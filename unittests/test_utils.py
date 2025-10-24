@@ -24,6 +24,7 @@ if __name__ == '__main__':
         sys.path.insert(0, sourcedir)
 
 import coldoc_tasks.task_utils as TU
+import plain_config as SC
 
 example_db = {
     'into': 123456,
@@ -55,24 +56,24 @@ class TestUtils(unittest.TestCase):
     def test_config_wr(self):
         t = tempfile.NamedTemporaryFile(prefix='testo_')
         n = t.name
-        TU.write_config(n, example_db)
-        ndb, sdb = TU.read_config(n)
+        SC.write_config(n, example_db)
+        ndb, sdb = SC.read_config(n)
         self.assertEqual(example_db, ndb)
 
     def test_config_wr2(self):
         out = io.StringIO()
-        TU.write_config(out, example_db)
+        SC.write_config(out, example_db)
         out.seek(0)
-        ndb, sdb = TU.read_config(out)
+        ndb, sdb = SC.read_config(out)
         #print(out.getvalue())
         self.assertEqual(example_db, ndb)
 
 
     def test_config_rw(self):
-        ndb, sdb = TU.read_config(io.StringIO(exampleconfig))
+        ndb, sdb = SC.read_config(io.StringIO(exampleconfig))
         #print(repr(ndb['texto']))
         out = io.StringIO()
-        TU.write_config(out, ndb, sdb)
+        SC.write_config(out, ndb, sdb)
         out = out.getvalue()
         self.assertEqual(exampleconfig, out)
 

@@ -51,10 +51,14 @@ Usage
 Dependencies
 ------------
 
-when used with its internal server, the package has no strict dependencies.
-The packages `lockfile` and `psutil`, if installed, will be used to enhance some parts.
+This package requires:
 
-If you wish to use *Celery* servers, then you need to install the celery package.
+- `plain-config` - for configuration file handling (automatically installed from GitHub)
+
+Optional dependencies:
+
+- `lockfile` and `psutil` - if installed, will be used to enhance some parts
+- `celery[redis]` - if you wish to use Celery servers
 
 Starting the server
 -------------------
