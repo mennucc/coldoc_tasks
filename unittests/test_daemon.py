@@ -32,7 +32,7 @@ if __name__ == '__main__':
     if sourcedir not in sys.path:
         sys.path.insert(0, sourcedir)
 
-import coldoc_tasks.simple_tasks, coldoc_tasks.coldoc_tasks as CT
+import coldoc_tasks.simple_tasks, coldoc_tasks.coldoc_tasks as CT, coldoc_tasks.task_utils as TU
 
 class TestDaemon(unittest.TestCase):
     #
@@ -55,7 +55,7 @@ class TestDaemon(unittest.TestCase):
         self.assertTrue(err == 0)
         #
         CT.shutdown(address, authkey)
-        coldoc_tasks.task_utils.proc_join(proc)
+        TU.proc_join(proc)
         t.close()
         #print(t.name)
         os.unlink(t.name)
@@ -71,7 +71,7 @@ class TestDaemon(unittest.TestCase):
         ping = CT.ping(address, authkey)
         self.assertTrue( ping )
         CT.shutdown(address, authkey)
-        coldoc_tasks.task_utils.proc_join(proc)
+        TU.proc_join(proc)
         # check that it is off
         ping = CT.ping(address, authkey, warn=False)
         self.assertFalse( ping )
@@ -85,7 +85,7 @@ class TestDaemon(unittest.TestCase):
         ping = CT.ping(address, authkey)
         self.assertTrue( ping )
         CT.shutdown(address, authkey)
-        coldoc_tasks.task_utils.proc_join(proc)
+        TU.proc_join(proc)
         t.close()
         #print(open(info).read())
         os.unlink(t.name)
@@ -130,11 +130,11 @@ class TestDaemon(unittest.TestCase):
         CT.shutdown(address1, authkey1)
         if not isinstance(proc1,int):
             # avoid an useless warning by joining the subprocess
-            coldoc_tasks.task_utils.proc_join(proc1)
+            TU.proc_join(proc1)
         elif not isinstance(proc2,int):
-            coldoc_tasks.task_utils.proc_join(proc2)
+            TU.proc_join(proc2)
         else:
-            coldoc_tasks.task_utils.proc_join(proc1pid)
+            TU.proc_join(proc1pid)
 
         t.close()
         #print(open(info).read())

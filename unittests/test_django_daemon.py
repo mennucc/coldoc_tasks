@@ -39,7 +39,7 @@ if __name__ == '__main__':
     if sourcedir not in sys.path:
         sys.path.insert(0, sourcedir)
 
-import coldoc_tasks.simple_tasks, coldoc_tasks.coldoc_tasks
+import coldoc_tasks.simple_tasks, coldoc_tasks.coldoc_tasks as CT, coldoc_tasks.task_utils as TU
 
 
 @unittest.skipIf(django is None, 'django is not installed')
@@ -72,8 +72,8 @@ class TestDjangoDaemon(unittest.TestCase):
     def tearDownClass(cls):
         # remove
         try:
-            address, authkey = coldoc_tasks.coldoc_tasks.tasks_server_readinfo(cls.info)[:2]
-            coldoc_tasks.coldoc_tasks.shutdown(address, authkey)
+            address, authkey = CT.tasks_server_readinfo(cls.info)[:2]
+            CT.shutdown(address, authkey)
         except Exception as E:
             logger.warning(' no server to stop at %r, %r', cls.info, E)
         #logger.warning(' you should remove %r', cls.tmpdir)
@@ -81,10 +81,10 @@ class TestDjangoDaemon(unittest.TestCase):
         pass
     #
     def test_daemon(self):
-        proc, info_ = coldoc_tasks.coldoc_tasks.tasks_daemon_django_autostart(self.settings)
+        proc, info_ = CT.tasks_daemon_django_autostart(self.settings)
         self.assertTrue( proc )
-        address, authkey = coldoc_tasks.coldoc_tasks.tasks_server_readinfo(self.info)[:2]
-        coldoc_tasks.coldoc_tasks.shutdown(address, authkey)
+        address, authkey = CT.tasks_server_readinfo(self.info)[:2]
+        CT.shutdown(address, authkey)
 
 
     @unittest.skipIf(lockfile is None,
@@ -95,11 +95,11 @@ class TestDjangoDaemon(unittest.TestCase):
         # start
         def run1(l):
             log1 = tempfile.NamedTemporaryFile(prefix=l, delete=False)
-            proc1, info1 = coldoc_tasks.coldoc_tasks.tasks_daemon_django_autostart(self.settings)
+            proc1, info1 = CT.tasks_daemon_django_autostart(self.settings)
             self.assertEqual( info1, info )
             self.assertTrue( proc1 )
-            address1, authkey1 = coldoc_tasks.coldoc_tasks.tasks_server_readinfo(info)[:2]
-            ping1 = coldoc_tasks.coldoc_tasks.ping(address1, authkey1)
+            address1, authkey1 = CT.tasks_server_readinfo(info)[:2]
+            ping1 = CT.ping(address1, authkey1)
             self.assertTrue( ping1 )
             return log1,proc1,info1,address1,authkey1,ping1
         
@@ -126,14 +126,14 @@ class TestDjangoDaemon(unittest.TestCase):
         self.assertEqual(authkey1, authkey2)
         
         ## stop
-        coldoc_tasks.coldoc_tasks.shutdown(address1, authkey1)
+        CT.shutdown(address1, authkey1)
         if not isinstance(proc1,int):
             # avoid an useless warning by joining the subprocess
-            coldoc_tasks.task_utils.proc_join(proc1)
+            TU.proc_join(proc1)
         elif not isinstance(proc2,int):
-            coldoc_tasks.task_utils.proc_join(proc2)
+            TU.proc_join(proc2)
         else:
-            coldoc_tasks.task_utils.proc_join(proc1pid)
+            TU.proc_join(proc1pid)
 
 
 if __name__ == '__main__':
