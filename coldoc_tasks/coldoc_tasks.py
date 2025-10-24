@@ -963,7 +963,7 @@ def tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
                 env['PYTHONPATH'] = os.pathsep.join(pythonpath)
             if tempdir:
                 for j in ('TMPDIR', 'TEMP', 'TMP'):
-                    env[j] = str(default_tempdir)
+                    env[j] = str(tempdir)
             devnull = open(os.devnull)
             proc = subprocess.Popen(args, stdin=devnull, stdout=logfile_,
                                     env = env,
