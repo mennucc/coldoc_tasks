@@ -383,6 +383,8 @@ def __countthem():
 
 def main(argv):
     #
+    sourcedir = os.path.dirname(os.path.dirname(__file__))
+    #
     if not argv:
         print(__doc__)
         return False
@@ -420,7 +422,6 @@ def main(argv):
         else:
             logfile_ = tempfile.NamedTemporaryFile(delete=False, prefix='coldoc_tasks_celery_server')
             logfile = logfile_.name
-        sourcedir = os.path.dirname(os.path.dirname(__file__))
 
         proc = tasks_daemon_autostart(celeryconfig,
                                       logfile=logfile,
