@@ -354,9 +354,11 @@ def test_fork(fork_class, print_ = print):
         print_('** cannot pickle : %r' % E)
         ret += 1
     r = f.wait()
-    print_('Returned %r ' % (r,))
     if r != '3.14':
         ret += 1
+        print_('Returned wrong value %r ' % (r,))
+    else:
+        print_('Returned %r ' % (r,))
     #
     if 1:
         print_("==== test : subprocess raises exception")
