@@ -119,7 +119,7 @@ def _read_config(infofile):
     " `infofile` must iterate to text lines; returns `(db, sdb)` where `db` are the extracted key,value, `sdb` is the structure of the file"
     def B(x): # to byte
         if isinstance(x, str):
-            x.encode('utf8')
+            return x.encode('utf8')
         return x
     db = {}
     sdb = []
