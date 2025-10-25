@@ -568,7 +568,7 @@ def run_server(address, authkey, infofile, **kwargs):
                     if not sent:
                         logger.critical('The result of process %s was never recovered', id_)
                     __send_message(b'#QUIT', F)
-                    proc_join(proc.join)
+                    proc_join(proc)
                 except  Exception as E:
                     logger.exception('Unexpected exception from id_ %r : %r', id_, E)
             else:

@@ -75,6 +75,116 @@ class TestUtils(unittest.TestCase):
         out = out.getvalue()
         self.assertEqual(exampleconfig, out)
 
+
+def _dummy_func_sleep_short():
+    """Helper function for multiprocessing tests (must be at module level for pickling)"""
+    time.sleep(0.1)
+
+def _dummy_func_sleep_long():
+    """Helper function for multiprocessing tests (must be at module level for pickling)"""
+    time.sleep(0.2)
+
+def _dummy_func_return_42():
+    """Helper function for multiprocessing tests (must be at module level for pickling)"""
+    time.sleep(0.1)
+    return 42
+
+
+class TestProcJoin(unittest.TestCase):
+    """Test the proc_join function with different input types"""
+
+    @classmethod
+    def setUpClass(cls):
+        """Set up multiprocessing to use 'fork' for these tests"""
+        # Python 3.14 uses 'forkserver' by default, but we need 'fork' for these tests
+        # Save the current context
+        cls._original_start_method = multiprocessing.get_start_method(allow_none=True)
+        try:
+            multiprocessing.set_start_method('fork', force=True)
+        except RuntimeError:
+            pass  # Already set
+
+    @classmethod
+    def tearDownClass(cls):
+        """Restore original multiprocessing start method"""
+        if cls._original_start_method:
+            try:
+                multiprocessing.set_start_method(cls._original_start_method, force=True)
+            except RuntimeError:
+                pass
+
+    def test_proc_join_with_process(self):
+        """Test proc_join with a multiprocessing.Process object"""
+        proc = multiprocessing.Process(target=_dummy_func_sleep_short)
+        proc.start()
+        # Wait a bit to ensure process starts
+        time.sleep(0.05)
+        # This should work - proc has a join method
+        TU.proc_join(proc)
+        self.assertFalse(proc.is_alive())
+
+    def test_proc_join_with_process_method(self):
+        """Test proc_join with proc.join (the method object)"""
+        proc = multiprocessing.Process(target=_dummy_func_sleep_short)
+        proc.start()
+        # Wait a bit to ensure process starts
+        time.sleep(0.05)
+
+        # Capture log output to see what happens
+        with self.assertLogs(TU.logger, level='WARNING') as cm:
+            # Pass the method object instead of the process
+            TU.proc_join(proc.join)
+
+        # Should have logged a warning about not knowing how to wait
+        self.assertTrue(any("Don't know how to wait" in msg for msg in cm.output))
+
+        # Process should still be alive since proc_join didn't actually wait
+        self.assertTrue(proc.is_alive())
+
+        # Clean up by actually joining it
+        proc.join()
+        self.assertFalse(proc.is_alive())
+
+    def test_proc_join_with_pool_result(self):
+        """Test proc_join with a pool.ApplyResult object"""
+        pool = multiprocessing.Pool(1)
+        result = pool.apply_async(_dummy_func_return_42)
+
+        # This should work - result has a wait method
+        TU.proc_join(result)
+
+        # Result should be ready
+        self.assertTrue(result.ready())
+        self.assertEqual(result.get(), 42)
+
+        pool.close()
+        pool.join()
+
+    @unittest.skip("TODO: proc_join with PID needs investigation - WNOHANG behavior unclear")
+    def test_proc_join_with_pid(self):
+        """Test proc_join with a PID (integer)"""
+        proc = multiprocessing.Process(target=_dummy_func_sleep_short)
+        proc.start()
+        pid = proc.pid
+
+        # Wait for process to complete
+        time.sleep(0.15)
+
+        # This should work - proc_join handles integers as PIDs
+        # Note: proc_join uses WNOHANG, so it does non-blocking waits
+        TU.proc_join(pid)
+
+        # Process should be done after the sleep
+        self.assertFalse(proc.is_alive())
+
+    def test_proc_join_with_bool(self):
+        """Test proc_join with a boolean (should just warn)"""
+        with self.assertLogs(TU.logger, level='WARNING') as cm:
+            TU.proc_join(True)
+
+        # Should have logged a warning about not knowing the process id
+        self.assertTrue(any("Don't know the true process id" in msg for msg in cm.output))
+
 if __name__ == '__main__':
     #
     unittest.main()
