@@ -23,3 +23,6 @@ dependencies = [
 [project.urls]
 "Homepage" = "https://github.com/mennucc/coldoc_tasks"
 "Bug Tracker" = "https://github.com/mennucc/coldoc_tasks/issues"
+
+[project.scripts]
+coldoc_tasks_cli = "coldoc_tasks.coldoc_tasks_cli:main"
