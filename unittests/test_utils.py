@@ -37,16 +37,15 @@ example_db = {
 }
 
 
-exampleconfig = """
+exampleconfig = r"""
 into/i=123456
 nonne/r=None
 # comment
 
 floato/f=3.141
 stringo=hello
-texto/64s=aGkKIGhvdyBhcmUgeW91Cg==
+texto/r='hi\n how are you\n'
 byteo/32=ORUGK4TF
- 
 # final comment
 """
 
