@@ -405,6 +405,14 @@ def _fork_mp_wrapper(*args, **kwargs):
 
 def run_server(address, authkey, infofile, **kwargs):
     """ returns the `kwargs`, containing also `kwargs["return_code"]`"""
+    # Python 3.14+ changed the default start method to 'forkserver' on POSIX platforms.
+    # We need 'fork' for socket inheritance to work properly.
+    if hasattr(multiprocessing, 'set_start_method'):
+        try:
+            multiprocessing.set_start_method('fork', force=True)
+        except RuntimeError:
+            # Start method already set, try to use the current context
+            pass
     L = multiprocessing.log_to_stderr()
     global logger
     L.setLevel(logger.getEffectiveLevel())
