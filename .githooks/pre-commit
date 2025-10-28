@@ -2,13 +2,23 @@
 
 set -e
 
+if test ! -d ".git" ; then
+ echo Must be run from the base directory of the GIT repository
+ exit
+fi
+
+################
+
+
 if git diff --cached | egrep -2 '^(old.mode|new.mode)' ; then
  echo 'Please do not change mode of files'
  exit 1
 fi
 
 
-########## flake, pylint
+
+######### prepare test dir
+
 
 t=`mktemp -d`
 
@@ -20,6 +30,16 @@ git archive HEAD | ( cd $t ; tar xf - )
 
 
 git diff --cached | ( cd $t ; patch -p1 )
+
+######### hack
+
+origdir=$(realpath . )
+
+test -L "$t"/coldoc_tasks/wrap_lockfile.py
+rm     "$t"/coldoc_tasks/wrap_lockfile.py
+cp -av  "$origdir"/coldoc_tasks/wrap_lockfile.py -t "$t"/coldoc_tasks/
+
+########## flake, pylint
 
 pushd $t
 

@@ -100,8 +100,8 @@ if __name__ == '__main__':
     
 
 from coldoc_tasks.simple_tasks import fork_class_base
-from coldoc_tasks.task_utils import _normalize_pythonpath, mychmod, proc_join, mylockfile, myLockTimeout
-from coldoc_tasks.task_utils import format_exception
+from coldoc_tasks.task_utils import _normalize_pythonpath, mychmod, proc_join, format_exception
+from coldoc_tasks.wrap_lockfile import mylockfile, myLockTimeout
 import plain_config
 from coldoc_tasks.exceptions import *
 
