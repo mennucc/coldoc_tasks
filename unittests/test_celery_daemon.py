@@ -46,10 +46,11 @@ class TestDaemon(unittest.TestCase):
             pass
         #
         ret = coldoc_tasks.celery_tasks.test(cc, print_=noprint)
-        self.assertTrue( ret == 0 )
         coldoc_tasks.celery_tasks.shutdown(cc)
         coldoc_tasks.task_utils.proc_join(proc)
         os.unlink(self.logfile.name)
+        # check at the end so that cleanup is always performed
+        self.assertTrue( ret == 0 )
 
 
 if __name__ == '__main__':
