@@ -24,12 +24,6 @@ if __name__ == '__main__':
         sys.path.insert(0, sourcedir)
 
 try:
-    import lockfile
-except ImportError:
-    logger.error('Cannot import `lockfile`')
-    lockfile = None
-
-try:
     import django
 except ImportError:
     logger.error('Cannot import `django`')
@@ -87,8 +81,6 @@ class TestDjangoDaemon(unittest.TestCase):
         CT.shutdown(address, authkey)
 
 
-    @unittest.skipIf(lockfile is None,
-                     "must install the `lockfile` library for this test")
     def test_daemon_twice_lock(self):
         #settings = os.path.join(sourcedir, 'django_test',' settings.py')
         info = self.info

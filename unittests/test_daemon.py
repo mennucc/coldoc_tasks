@@ -14,13 +14,6 @@ import functools, tempfile, threading, multiprocessing, logging, signal
 from os.path import join as osjoin
 import concurrent.futures
 
-
-try:
-    import lockfile
-except ImportError:
-    lockfile = None
-
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -32,7 +25,11 @@ if __name__ == '__main__':
     if sourcedir not in sys.path:
         sys.path.insert(0, sourcedir)
 
-import coldoc_tasks.simple_tasks, coldoc_tasks.coldoc_tasks as CT, coldoc_tasks.task_utils as TU
+import coldoc_tasks.coldoc_tasks as CT
+import coldoc_tasks.task_utils as TU
+## currently unused
+#import coldoc_tasks.simple_tasks
+#import coldoc_tasks.wrap_lockfile as WL
 
 class TestDaemon(unittest.TestCase):
     #
@@ -90,8 +87,6 @@ class TestDaemon(unittest.TestCase):
         #print(open(info).read())
         os.unlink(t.name)
 
-    @unittest.skipIf(lockfile is None,
-                     "must install the `lockfile` library for this test")
     def test_daemon_twice_lock(self):
         t = tempfile.NamedTemporaryFile(prefix='info_', delete=False)
         info = t.name

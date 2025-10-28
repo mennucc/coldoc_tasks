@@ -79,11 +79,6 @@ try:
 except ImportError:
     psutil = None
 
-try:
-    import lockfile
-except ImportError:
-    lockfile = None
-
 
 python_default_tempdir = tempfile.gettempdir()
 
