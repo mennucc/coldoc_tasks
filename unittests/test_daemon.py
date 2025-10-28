@@ -49,13 +49,14 @@ class TestDaemon(unittest.TestCase):
             pass
         #
         err = CT.test(address, authkey, print_=noprint)
-        self.assertTrue(err == 0)
         #
         CT.shutdown(address, authkey)
         TU.proc_join(proc)
         t.close()
         #print(t.name)
         os.unlink(t.name)
+        #
+        self.assertTrue(err == 0)
 
     def test_daemon_twice(self):
         t = tempfile.NamedTemporaryFile(prefix='info_', delete=False)
@@ -65,13 +66,11 @@ class TestDaemon(unittest.TestCase):
         self.assertTrue( info_ == info )
         self.assertTrue( proc )
         address, authkey = CT.tasks_server_readinfo(info)[:2]
-        ping = CT.ping(address, authkey)
-        self.assertTrue( ping )
+        ping1 = CT.ping(address, authkey)
         CT.shutdown(address, authkey)
         TU.proc_join(proc)
         # check that it is off
-        ping = CT.ping(address, authkey, warn=False)
-        self.assertFalse( ping )
+        ping2 = CT.ping(address, authkey, warn=False)
         # start again and stop again
         proc, info_ = CT.tasks_daemon_autostart(infofile=info, logfile=True)
         self.assertTrue( info_ == info )
@@ -79,13 +78,20 @@ class TestDaemon(unittest.TestCase):
         address2, authkey2 = CT.tasks_server_readinfo(info)[:2]
         self.assertTrue( address2 == address)
         self.assertTrue( authkey2 == authkey)
-        ping = CT.ping(address, authkey)
-        self.assertTrue( ping )
+        ping3 = CT.ping(address, authkey)
         CT.shutdown(address, authkey)
         TU.proc_join(proc)
+        ping4 = CT.ping(address, authkey)
+        # clean up
         t.close()
-        #print(open(info).read())
         os.unlink(t.name)
+        #
+        # asserts at the end
+        self.assertTrue( ping1 )
+        self.assertFalse( ping2 )
+        self.assertTrue( ping3 )
+        self.assertFalse( ping4 )
+
 
     def test_daemon_twice_lock(self):
         t = tempfile.NamedTemporaryFile(prefix='info_', delete=False)
