@@ -31,9 +31,10 @@ jobs:
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
-    - name: Pull wrap_lockfile submodule
+    - name: Pull submodules
       run: |
-        git submodule update sub/wrap_lockfile
+        git submodule init
+        git submodule update
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
