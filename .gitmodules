@@ -1,3 +1,6 @@
 [submodule "sub/plain-config"]
 	path = sub/plain-config
 	url = git@github.com:mennucc/plain-config.git
+[submodule "sub/wrap_lockfile"]
+	path = sub/wrap_lockfile
+	url = git@github.com:mennucc/wrap_lockfile.git
