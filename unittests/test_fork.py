@@ -164,9 +164,10 @@ class TestForkColDoc(Base,unittest.TestCase):
             if not ok:
                 cls.logger.critical("could not start server")
 
-        cls.fork_class =  functools.partial(coldoc_tasks.coldoc_tasks.fork_class,
-                                             address=cls.address, authkey=cls.authkey)
-
+    @property
+    def fork_class(self, **v):
+        return functools.partial(coldoc_tasks.coldoc_tasks.fork_class,
+                                 address=self.address, authkey=self.authkey)
 
     @classmethod
     def tearDownClass(cls):
@@ -208,8 +209,11 @@ class TestForkCelery(Base,unittest.TestCase):
                 cls.logger.critical("could not start server! log follows \n" + ('v' * 70) +\
                                     open(cls.logfile.name).read() + '\n' +  ('^' * 70))
                 raise Exception("could not start Celery server")
-        cls.fork_class =  functools.partial(coldoc_tasks.celery_tasks.fork_class,
-                                            celeryconfig=cls.celeryconfig)
+            
+    @property
+    def fork_class(self, **v):
+        return  functools.partial(coldoc_tasks.celery_tasks.fork_class,
+                                  celeryconfig=self.celeryconfig)
 
     @classmethod
     def tearDownClass(cls):
