@@ -311,13 +311,18 @@ You can also autostart both kind of server, using
 Developing
 ==========
 
+To work on the code, you need to set up submodules, using:
+
+    git submodule init
+    git submodule update
+
+
 If you wish to help in developing, please
 
     pip -r requirements-test.txt
     git config --local core.hooksPath .githooks/
 
 so that each commit is pre tested.
-
 
 Acknowledgements
 ================
