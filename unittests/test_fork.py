@@ -151,8 +151,10 @@ class TestForkColDoc(Base,unittest.TestCase):
                                                                     pythonpath=(sourcedir,testdir),
                                                                     )
             if not cls.proc:
+                with open(cls.logfile.name) as logfile_fd:
+                    logfile_content = logfile_fd.read()
                 cls.logger.critical("could not start server! log follows \n" + ('v' * 70) +\
-                                    open(cls.logfile.name).read() + '\n' +  ('^' * 70))
+                                    logfile_content + '\n' +  ('^' * 70))
                 raise Exception("could not start server")
         else:
             target = coldoc_tasks.coldoc_tasks.run_server
@@ -206,8 +208,10 @@ class TestForkCelery(Base,unittest.TestCase):
                                                                     logfile=cls.logfile.name,
                                                                     pythonpath=(sourcedir,testdir))
         if not cls.proc:
+                with open(cls.logfile.name) as logfile_fd:
+                    logfile_content = logfile_fd.read()
                 cls.logger.critical("could not start server! log follows \n" + ('v' * 70) +\
-                                    open(cls.logfile.name).read() + '\n' +  ('^' * 70))
+                                    logfile_content + '\n' +  ('^' * 70))
                 raise Exception("could not start Celery server")
             
     @property
