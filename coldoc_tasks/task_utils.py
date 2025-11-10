@@ -133,14 +133,30 @@ class choose_best_fork_class(object):
         t = time.time()
         refresh = self.last_fork_class is None or \
             ( t > self.time_choice + self.refresh_time_interval)
-        if not refresh and self.infofile_mtime and self.infofile_mtime != os.path.getmtime(self.infofile):
-            self.infofile_mtime = os.path.getmtime(self.infofile)
-            logger.info('infofile was changed: %r', self.infofile)
-            refresh = True
-        if not refresh and self.celeryconfig_mtime and self.celeryconfig_mtime != os.path.getmtime(self.celeryconfig):
-            self.celeryconfig_mtime = os.path.getmtime(self.celeryconfig)
-            logger.info('celeryconfig was changed: %r', self.celeryconfig)
-            refresh = True
+        if not refresh and self.infofile_mtime:
+            try:
+                current_mtime = os.path.getmtime(self.infofile)
+            except FileNotFoundError:
+                logger.warning('infofile missing; will retry backends: %r', self.infofile)
+                self.infofile_mtime = None
+                refresh = True
+            else:
+                if self.infofile_mtime != current_mtime:
+                    self.infofile_mtime = current_mtime
+                    logger.info('infofile was changed: %r', self.infofile)
+                    refresh = True
+        if not refresh and self.celeryconfig_mtime:
+            try:
+                current_mtime = os.path.getmtime(self.celeryconfig)
+            except FileNotFoundError:
+                logger.warning('celeryconfig missing; will retry backends: %r', self.celeryconfig)
+                self.celeryconfig_mtime = None
+                refresh = True
+            else:
+                if self.celeryconfig_mtime != current_mtime:
+                    self.celeryconfig_mtime = current_mtime
+                    logger.info('celeryconfig was changed: %r', self.celeryconfig)
+                    refresh = True
         #
         if refresh:
             self.time_choice = t
