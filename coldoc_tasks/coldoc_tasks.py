@@ -168,6 +168,18 @@ def __socket_server(socket_, access_pair, rets, id_):
 
 
 
+def __recv_exact(sock, length):
+    "Read exactly `length` bytes from `sock` or raise RuntimeError if the peer closes."
+    data = bytearray()
+    while len(data) < length:
+        chunk = sock.recv(length - len(data))
+        if not chunk:
+            raise RuntimeError('Socket closed before receiving expected data (wanted {}, got {}).'.format(
+                length, len(data)))
+        data.extend(chunk)
+    return bytes(data)
+
+
 def __send_message(m, F, timeout=None):
     assert isinstance(m,bytes) and len(m) == 5
     # unpack auth from access_pair definition
@@ -195,12 +207,12 @@ def __send_message(m, F, timeout=None):
                 raise RuntimeError('Unexpected hello {!r} from {!r}'.format(a, F))
         s.sendall(m)
         if m == b'#SEND':
-            l = s.recv(8)
+            l = __recv_exact(s, 8)
             l = struct.unpack('<Q', l)[0]
-            rets = s.recv(l)
+            rets = __recv_exact(s, l)
             ret = pickle.loads(rets)
         elif m == b'#SENT':
-            l = s.recv(1)
+            l = __recv_exact(s, 1)
             l = struct.unpack('<B', l)[0]
             ret = bool(l)
         a = s.recv(5)
