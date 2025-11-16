@@ -117,6 +117,7 @@ actions = ('ping__','getpid__','status__','shutdown__',
 
 @functools.lru_cache(100)
 def get_manager(address, authkey):
+    """Return a connected `SyncManager` registered with the RPC actions used by the task server."""
     manager = multiprocessing.managers.SyncManager(address=address, authkey=authkey)
     for j in actions:
         manager.register(j)
@@ -224,29 +225,25 @@ def __send_message(m, F, timeout=None):
 ######################### starting jobs
 
 def run_cmd(manager, cmd, args, kwarks):
-    " run a command "
+    """Synchronously run `cmd(*args, **kwarks)` via the manager and return its proxy result."""
     proxy = manager.run_cmd__(cmd, args, kwarks)
     return proxy._getvalue()
 
 def queue_cmd(manager, cmd, args, kwarks, queue=True):
-    " queue a command for running in queue named `queue` "
+    """Schedule a command on the named server queue and return the enqueued task identifier."""
     proxy = manager.run_cmd__(cmd, args, kwarks, queue=queue)
     return proxy._getvalue()
 
 
 def wait(id_, manager):
-    " wait for command execution to end "
+    """Block until the remote command identified by `id_` finishes executing."""
     F = manager.get_wait_socket__(id_)
     F = F._getvalue()
     if F is not None:
         return __send_message(b'#WAIT', F)
 
 def get_result(id_, manager, timeout=None):
-    """ get command result , as a triple (status, result, traceback),
-      where status is 0 or 1, 
-      if status is 0, result is the result
-      if status is 1, result contain the exception given by the command
-    """
+    """Fetch the serialized `(status, payload, traceback)` tuple associated with `id_`."""
     F = manager.get_wait_socket__(id_)
     F = F._getvalue()
     if F is not None:
@@ -254,7 +251,7 @@ def get_result(id_, manager, timeout=None):
     return None
 
 def join(id_, manager):
-    " let the subprocess of the command terminate gracefully "
+    """Notify the server that the client collected the result so the worker can exit."""
     F = manager.get_wait_socket__(id_)
     F = F._getvalue()
     if F is not None:
@@ -338,6 +335,7 @@ class fork_class(fork_class_base):
 ############################## status
 
 def ping(address, authkey, warn=True):
+    """Return True if the remote server responds to a health probe, False otherwise."""
     try:
         manager = get_manager(address, authkey)
         F = manager.ping__()
@@ -348,6 +346,7 @@ def ping(address, authkey, warn=True):
             logger.warning('When pinging %r', E)
 
 def server_pid(address, authkey, warn=True):
+    """Return the PID reported by the remote task server."""
     try:
         manager = get_manager(address, authkey)
         F = manager.getpid__()
@@ -359,6 +358,7 @@ def server_pid(address, authkey, warn=True):
 
 
 def status(address, authkey):
+    """Fetch the dictionary returned by the server `status__` RPC call."""
     try:
         manager = get_manager(address, authkey)
         F = manager.status__()
@@ -368,6 +368,7 @@ def status(address, authkey):
         logger.warning('When status %r', E)
 
 def shutdown(address, authkey):
+    """Request a graceful shutdown of the remote server."""
     try:
         manager = get_manager(address, authkey)
         return manager.shutdown__()
@@ -375,6 +376,7 @@ def shutdown(address, authkey):
         logger.warning('When shutdown %r', E)
 
 def test(address, authkey, print_=print):
+    """Exercise fork/non-fork execution paths and print diagnostic information."""
     import coldoc_tasks.task_utils as task_utils
     logger.setLevel(logging.INFO)
     FC = functools.partial(fork_class, address=address, authkey=authkey)
@@ -783,6 +785,7 @@ def tasks_server_start(infofile, address=None, authkey=None,
 
 
 def _coerce_path_setting(value, setting_name):
+    """Return a string path for the given Django setting or `None` if conversion fails."""
     if value is None:
         return None
     original = value
@@ -803,6 +806,7 @@ def _coerce_path_setting(value, setting_name):
 
 
 def _sanitize_pythonpath_setting(value):
+    """Normalize the pythonpath setting into a list/str compatible with `_normalize_pythonpath`."""
     if value is None:
         return None
     if isinstance(value, Path):
@@ -822,6 +826,7 @@ def _sanitize_pythonpath_setting(value):
 
 
 def _read_django_settings(kwargs, settings):
+    """Populate `kwargs` with sanitized Django settings used to start or connect to the server."""
     kwargs['infofile'] = _coerce_path_setting(getattr(settings, 'COLDOC_TASKS_INFOFILE', None),
                                               'COLDOC_TASKS_INFOFILE')
     #
@@ -848,6 +853,7 @@ def _read_django_settings(kwargs, settings):
     kwargs['with_django'] = os.environ.get('DJANGO_SETTINGS_MODULE')
 
 def tasks_django_server_start(settings, **kwargs):
+    """Start the task server using parameters extracted from Django settings."""
     _read_django_settings(kwargs, settings)
     return tasks_server_start(**kwargs)
 

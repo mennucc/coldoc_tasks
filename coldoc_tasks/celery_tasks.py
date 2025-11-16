@@ -72,6 +72,7 @@ def import_module_from_string(name: str, source: str):
     return module
 
 def get_client(celeryconfig_):
+    """Load the Celery app described by `celeryconfig_` (path, file-like object, or code)."""
     assert celery is not None
     if isinstance(celeryconfig_, io.IOBase):
         celeryconfig_.seek(0)
@@ -116,6 +117,7 @@ def _get_client(celeryconfig_, mtime = None):
 
 
 def celery_server_check(celeryconfig_, timeout=0.1):
+    """Return True if workers defined by the config respond to a ping within `timeout`."""
     if not celery:
         return False
     app = get_client(celeryconfig_)
@@ -127,12 +129,14 @@ def celery_server_check(celeryconfig_, timeout=0.1):
 ping = celery_server_check
 
 def shutdown(celeryconfig_):
+    """Tell the Celery control plane to terminate workers described by `celeryconfig_`."""
     app = get_client(celeryconfig_)
     return app.control.shutdown()
 
 stop = shutdown
 
 def test(celeryconfig_, print_=print):
+    """Run the generic fork-class tests against the Celery backend."""
     from coldoc_tasks.task_utils import test_fork
     print_('*' * 30 + '(celery forking)')
     FC = functools.partial(fork_class, celeryconfig=celeryconfig_)
@@ -142,6 +146,7 @@ def test(celeryconfig_, print_=print):
 
 
 def status(celeryconfig_):
+    """Collect Celery inspect data (availability, stats, and task listings)."""
     app = get_client(celeryconfig_)
     #https://stackoverflow.com/a/53856001/5058564
     i = app.control.inspect()
@@ -162,7 +167,7 @@ def status(celeryconfig_):
 ################## running
 
 def __celery_run_it(cmd, k, v):
-    " internal function, to be wrapped for server and clients"
+    """Helper executed inside Celery workers to run an arbitrary callable safely."""
     try:
         ret = (0, cmd(*k, **v), None)
     except Exception as E:
@@ -170,7 +175,7 @@ def __celery_run_it(cmd, k, v):
     return ret
 
 def _get_run_it(celery_app):
-    " get factotum function, wrapped for server and clients"
+    """Return the Celery task wrapper used to execute arbitrary callables."""
     return celery_app.task(name='celery_run_it')(__celery_run_it)
 
 

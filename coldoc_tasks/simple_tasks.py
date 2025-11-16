@@ -8,12 +8,14 @@ from .task_utils import format_exception
 
 if (sys.platform != 'linux'):
     def waitstatus_to_exitcode(status):
+        """Best-effort portable fallback translating wait status to an exit code."""
         # FIXME  find a viable alternative
         return 0
 elif sys.version_info >= (3,9):
     from os import waitstatus_to_exitcode
 else:
     def waitstatus_to_exitcode(status):
+        """Translate a wait status into an exit code or signal number."""
         return os.WEXITSTATUS(status) if os.WIFEXITED(status) else \
                ( - os.WTERMSIG(status) if os.WIFSIGNALED(status) else None)
 
