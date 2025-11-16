@@ -21,7 +21,7 @@ testdir = os.path.dirname(os.path.realpath(__file__))
 sourcedir = os.path.dirname(testdir)
 
 if testdir not in sys.path:
-    sys.path.insert(0, testdir)
+    sys.path.insert(0, sourcedir)
 
 
 if __name__ == '__main__':
