@@ -134,6 +134,10 @@ There are four implementations of fork classes:
 - `simple` uses `os.fork`
 - `nofork` does not fork
 
+An additional `multiproc` implementation exists for development experiments (see
+`coldoc_tasks/multiproc_tasks.py`), though it is not part of the published
+package.
+
 The above name can be retrieved also from `fork_class.fork_type`.
 
 Task identifiers
