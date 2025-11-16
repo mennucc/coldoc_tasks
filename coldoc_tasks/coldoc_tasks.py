@@ -567,8 +567,39 @@ def run_server(address, authkey, infofile, **kwargs):
                 return True
             return False
         #
+        def _describe_process_entry(entry):
+            proc, pipe, access_pair_ = entry
+            summary = {
+                'proc': repr(proc)
+            }
+            for attr in ('name', 'pid', 'exitcode', 'daemon'):
+                value = getattr(proc, attr, None)
+                if value is not None:
+                    summary[attr] = value
+            for callable_attr in ('is_alive', 'ready', 'successful'):
+                method = getattr(proc, callable_attr, None)
+                if callable(method):
+                    try:
+                        summary[callable_attr] = method()
+                    except Exception:
+                        summary[callable_attr] = None
+            summary['pipe_closed'] = getattr(pipe, 'closed', None)
+            if isinstance(access_pair_, (tuple, list)) and access_pair_:
+                socket_name = access_pair_[0]
+                summary['socket'] = socket_name
+                if len(access_pair_) > 1:
+                    auth = access_pair_[1]
+                    summary['auth_required'] = bool(auth)
+            return summary
+
         def status__():
-            return { 'processes' : processes }
+            serialized = {}
+            for proc_id, entry in processes.items():
+                try:
+                    serialized[proc_id] = _describe_process_entry(entry)
+                except Exception as exc:
+                    serialized[proc_id] = {'error': repr(exc)}
+            return {'processes': serialized}
         #
         def ping__():
             return True

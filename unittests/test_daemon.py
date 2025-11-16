@@ -158,6 +158,55 @@ class TestDaemon(unittest.TestCase):
                 print(f2.read())
             print('^'*30)
             log2.close()
+    def test_status_reports_waiting_task(self):
+        # test using direct plumbing calls
+        direct=True
+        #
+        with  tempfile.NamedTemporaryFile(prefix='info_status_', delete=False) as info_file:
+            info = info_file.name
+            proc, info_ = CT.tasks_daemon_autostart(infofile=info, logfile=True)
+        self.assertEqual(info, info_)
+        self.assertTrue(proc)
+        address, authkey = CT.tasks_server_readinfo(info)[:2]
+        tmpdir = tempfile.mkdtemp(prefix='status_tmp_')
+        target = os.path.join(tmpdir, 'ready.txt')
+        if direct:
+            manager = CT.get_manager(address, authkey)
+            proxy_id = manager.run_cmd__(wait_for_file, (target,), {'timeout': 10.0})
+            task_id = proxy_id._getvalue()
+            self.assertTrue(task_id)
+        else:
+            fork = CT.fork_class(address, authkey)
+            fork.run(wait_for_file, target, timeout= 10.0)
+            task_id = fork.task_id
+        self.assertFalse(os.path.exists(target))
+        time.sleep(0.1)
+        status = CT.status(address, authkey)
+        self.assertIn('processes', status)
+        processes = status['processes']
+        self.assertIn(task_id, processes)
+        entry = processes[task_id]
+        self.assertIn('socket', entry)
+        # let the task finish by creating the file it is waiting for
+        with open(target, 'w', encoding='utf-8') as handle:
+            handle.write('go')
+        if direct:
+            result_proxy = manager.get_result_join__(task_id)
+            result = result_proxy._getvalue()
+            self.assertEqual(result[0], 0)
+            self.assertEqual(result[1], target)
+        else:
+            fork.wait()
+        #
+        status = CT.status(address, authkey)
+        processes = status['processes']
+        self.assertEqual(processes,{})
+        # 
+        CT.shutdown(address, authkey)
+        TU.proc_join(proc)
+        info_file.close()
+        os.unlink(info_file.name)
+        shutil.rmtree(tmpdir)
 
 
 if __name__ == '__main__':
