@@ -301,6 +301,10 @@ class fork_class(fork_class_base):
                 self.__ret = (1, E, format_exception(E))
         self.already_run = True
     #
+    @property
+    def task_id(self):
+        return self.__cmd_id
+    #
     def terminate(self):
         if self.use_fork_:
             if self.__manager is None:

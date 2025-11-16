@@ -192,6 +192,14 @@ class fork_class(fork_class_base):
         self.__celery_app = None
         return self.__dict__
     #
+    @property
+    def task_id(self):
+        if not self.use_fork_:
+            return None
+        if self.__cmd is None:
+            return None
+        return getattr(self.__cmd, 'id', None)
+    #
     @staticmethod
     def can_fork():
         return True

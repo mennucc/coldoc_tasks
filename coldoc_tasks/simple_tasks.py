@@ -1,4 +1,4 @@
-import sys, os, signal, tempfile, pickle, logging, functools
+import sys, os, signal, tempfile, pickle, logging, functools, uuid
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +81,10 @@ class fork_class(fork_class_base):
             signal_  = getattr(signal, 'SIGKILL', signal.SIGTERM)
         if self.__other_pid and not self.already_wait:
             os.kill(self.__other_pid, signal_)
+    #
+    @property
+    def task_id(self):
+        return str(self.__other_pid)
     #
     def run(self, cmd, *k, **v):
         assert self.already_run is False
@@ -191,10 +195,15 @@ class nofork_class(fork_class_base):
         super().__init__(use_fork = use_fork)
         self.__ret = (2 , RuntimeError('Program bug'), None)
         self.__pickle_exception = None
+        self.__task_id = uuid.uuid4().hex
     #
     @staticmethod
     def can_fork():
         return False
+    #
+    @property
+    def task_id(self):
+        return self.__task_id
     #
     def run(self, cmd, *k, **v):
         assert self.already_run is False

@@ -136,6 +136,24 @@ There are four implementations of fork classes:
 
 The above name can be retrieved also from `fork_class.fork_type`.
 
+Task identifiers
+----------------
+
+Each implementation of `fork_class` exposes a read-only `task_id` property that
+identifies the scheduled job:
+
+- `coldoc`: returns the server-provided identifier (matching what `status`
+  reports under `processes`).
+- `celery`: returns the Celery `AsyncResult.id` for the queued task (or `None`
+  when running inline without Celery).
+- `simple`: returns the PID of the forked child as a string.
+- `nofork`: generates an in-memory UUID so even inline jobs can be tracked.
+- `multiproc`: mirrors the `simple` behavior, exposing the PID of the spawned
+  `multiprocessing.Process`.
+
+The value is intended for diagnostics (e.g., matching `status` output) and may
+be reused when correlating logs.
+
 At any time,
 
     fork_class = coldoc_tasks.task_utils.choose_best_fork_class(infofile=None, celeryconfig=None, preferences=('celery','coldoc','simple'))
