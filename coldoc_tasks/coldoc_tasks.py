@@ -782,13 +782,69 @@ def tasks_server_start(infofile, address=None, authkey=None,
     return ret
 
 
+def _coerce_path_setting(value, setting_name):
+    if value is None:
+        return None
+    original = value
+    if isinstance(value, Path):
+        logger.info('Converting settings.%s Path %r to str', setting_name, value)
+        value = str(value)
+    elif isinstance(value, bytes):
+        try:
+            value = value.decode('utf-8')
+            logger.info('Decoded settings.%s bytes to str', setting_name)
+        except UnicodeDecodeError:
+            logger.warning('settings.%s bytes value %r could not be decoded', setting_name, original)
+            return None
+    if not isinstance(value, str):
+        logger.warning('settings.%s should be a str path, got %r', setting_name, type(original))
+        return None
+    return value
+
+
+def _sanitize_pythonpath_setting(value):
+    if value is None:
+        return None
+    if isinstance(value, Path):
+        coerced = _coerce_path_setting(value, 'COLDOC_TASKS_PYTHONPATH')
+        return [coerced] if coerced else None
+    if isinstance(value, (list, tuple)):
+        sanitized = []
+        for idx, entry in enumerate(value):
+            coerced = _coerce_path_setting(entry, f'COLDOC_TASKS_PYTHONPATH[{idx}]')
+            if coerced:
+                sanitized.append(coerced)
+        return sanitized
+    if isinstance(value, (str, bytes)):
+        return _coerce_path_setting(value, 'COLDOC_TASKS_PYTHONPATH')
+    logger.warning('settings.COLDOC_TASKS_PYTHONPATH has unsupported type %r', type(value))
+    return None
+
+
 def _read_django_settings(kwargs, settings):
-    kwargs['infofile'] = getattr(settings, 'COLDOC_TASKS_INFOFILE', None)
-    kwargs['address']     = getattr(settings, 'COLDOC_TASKS_SOCKET', None)
-    kwargs['authkey']     = getattr(settings, 'COLDOC_TASKS_PASSWORD', None)
-    kwargs['logfile']  = getattr(settings, 'COLDOC_TASKS_LOGFILE', None)
-    kwargs['default_tempdir']  = getattr(settings, 'COLDOC_TASKS_TEMPDIR', python_default_tempdir)
-    kwargs['pythonpath'] = getattr(settings, 'COLDOC_TASKS_PYTHONPATH', None)
+    kwargs['infofile'] = _coerce_path_setting(getattr(settings, 'COLDOC_TASKS_INFOFILE', None),
+                                              'COLDOC_TASKS_INFOFILE')
+    #
+    kwargs['address'] = _coerce_path_setting(getattr(settings, 'COLDOC_TASKS_SOCKET', None),
+                                             'COLDOC_TASKS_SOCKET')
+    #
+    authkey = getattr(settings, 'COLDOC_TASKS_PASSWORD', None)
+    if isinstance(authkey, str):
+        logger.info('Encoding settings.COLDOC_TASKS_PASSWORD string to bytes')
+        authkey = authkey.encode('utf-8')
+    elif authkey is not None and not isinstance(authkey, bytes):
+        logger.warning('settings.COLDOC_TASKS_PASSWORD must be bytes or str, got %r', type(authkey))
+        authkey = None
+    kwargs['authkey'] = authkey
+    #
+    kwargs['logfile'] = _coerce_path_setting(getattr(settings, 'COLDOC_TASKS_LOGFILE', None),
+                                             'COLDOC_TASKS_LOGFILE')
+    #
+    default_tempdir = _coerce_path_setting(getattr(settings, 'COLDOC_TASKS_TEMPDIR', python_default_tempdir),
+                                           'COLDOC_TASKS_TEMPDIR')
+    kwargs['default_tempdir'] = default_tempdir
+    #
+    kwargs['pythonpath'] = _sanitize_pythonpath_setting(getattr(settings, 'COLDOC_TASKS_PYTHONPATH', None))
     kwargs['with_django'] = os.environ.get('DJANGO_SETTINGS_MODULE')
 
 def tasks_django_server_start(settings, **kwargs):
