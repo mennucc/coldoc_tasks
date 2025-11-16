@@ -187,6 +187,7 @@ class fork_class(fork_class_base):
         """ pass either `celeryconfig` or `celery_app` (from `get_client` )"""
         assert celery_app or celeryconfig
         super().__init__(use_fork = use_fork )
+        self.__thread_lock = threading.Lock()
         self.__cmd = None
         self.__celery_app = celery_app
         self.__celery_run_it = None
@@ -195,7 +196,13 @@ class fork_class(fork_class_base):
     #
     def __getstate__(self):
         self.__celery_app = None
-        return self.__dict__
+        state = self.__dict__.copy()
+        state.pop('_fork_class__thread_lock', None)
+        return state
+    #
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.__thread_lock = threading.Lock()
     #
     @property
     def task_id(self):
@@ -209,7 +216,7 @@ class fork_class(fork_class_base):
     def can_fork():
         return True
     #
-    def run(self, cmd, *k, **v):
+    def __run(self, cmd, *k, **v):
         assert self.already_run is False
         if self.__celery_app is None:
             self.__celery_app  = get_client(self.__celeryconfig)
@@ -226,11 +233,15 @@ class fork_class(fork_class_base):
                 self.__ret = (1, E, format_exception(E))
         self.already_run = True
     #
+    def run(self, cmd, *k, **v):
+        with self.__thread_lock:
+            return self.__run(cmd, *k, **v)
+    #
     def terminate(self):
         if self.use_fork_:
             self.__cmd.revoke(terminate=True)
     #
-    def wait(self, timeout=None, raise_exception=True):
+    def __wait(self, timeout=None, raise_exception=True):
         timeout = self.__timeout if timeout is None else timeout
         assert self.already_run
         if self.use_fork_ and not self.already_wait:
@@ -248,6 +259,10 @@ class fork_class(fork_class_base):
             if raise_exception:
                 raise self.__ret[1]
         return self.__ret[1]
+    #
+    def wait(self, *args, **kwargs):
+        with self.__thread_lock:
+            return self.__wait(*args, **kwargs)
 
 def run_server(celeryconfig=None, with_django=None):
     " start Celery server "
@@ -475,4 +490,3 @@ if __name__ == '__main__':
         logger.exception("While %r", argv)
         ret = False
     sys.exit(0 if ret else 1)
-

@@ -1,4 +1,4 @@
-import sys, os, signal, tempfile, pickle, logging, functools, uuid
+import sys, os, signal, tempfile, pickle, logging, functools, uuid, threading
 
 logger = logging.getLogger(__name__)
 
@@ -48,12 +48,12 @@ class fork_class_base(object):
         return self.exception_
 
 #####################################
-
 class fork_class(fork_class_base):
     "class that runs a job in a forked subprocess, and returns results or raises exception"
     fork_type = 'simple'
     def __init__(self, use_fork = True, timeout=None, queue=None):
         super().__init__(use_fork = use_fork)
+        self.__thread_lock = threading.Lock()
         self.tempfile_name = None
         self.__my_pid    = os.getpid()
         self.__other_pid = None
@@ -88,7 +88,16 @@ class fork_class(fork_class_base):
     def task_id(self):
         return str(self.__other_pid)
     #
-    def run(self, cmd, *k, **v):
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state.pop('_fork_class__thread_lock', None)
+        return state
+    #
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.__thread_lock = threading.Lock()
+    #
+    def __run(self, cmd, *k, **v):
         assert self.already_run is False
         self.__cmd = cmd
         self.__k = k
@@ -126,7 +135,12 @@ class fork_class(fork_class_base):
             except Exception as e:
                 self.__ret = (1, e, format_exception(e))
         self.already_run = True
-    def wait(self, timeout=None, raise_exception=True):
+    #
+    def run(self, cmd, *k, **v):
+        with self.__thread_lock:
+            return self.__run(cmd, *k, **v)
+    #
+    def __wait(self, timeout=None, raise_exception=True):
         timeout = self.__timeout if timeout is None else timeout
         assert self.already_run is True
         if self.use_fork_ and not self.already_wait:
@@ -176,6 +190,9 @@ class fork_class(fork_class_base):
             if raise_exception:
                 raise self.__ret[1]
         return self.__ret[1]
+    def wait(self, *args, **kwargs):
+        with self.__thread_lock:
+            return self.__wait(*args, **kwargs)
     ## this is not __del__  
     def __del(self):
         logger.debug('fork_class.__del cmd %r __my_pid %r getpid %r , rm file %r .',

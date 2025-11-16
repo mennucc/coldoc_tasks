@@ -123,6 +123,13 @@ and `f.traceback` will return the traceback, as a list of strings.
 Note that `f.traceback` is the original traceback as occurred when the program ran (usually in a subprocess), whereas the
 traceback in the exception may refer to the stack as when the exception was re-raised.
 
+Instances of `fork_class` are thread-safe: the public `run()`/`wait()` calls
+serialize their critical sections, so parallel threads may reuse the same
+instance without corrupting its state.  The class can be pickled as well; the
+locking primitives are dropped when serializing and recreated when the object is
+unpickled.  Because of that, an unpickled copy no longer shares the original
+lock, so invoking both the original and the copy concurrently can race—treat
+each unpickled instance as independent.
 
 Task servers
 ------------

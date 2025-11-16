@@ -260,6 +260,7 @@ def join(id_, manager):
 
 ######################## starting jobs, by class
 
+
 class fork_class(fork_class_base):
     "class that runs a job in a subprocess, and returns results or raises exception"
     fork_type = 'coldoc'
@@ -273,16 +274,25 @@ class fork_class(fork_class_base):
         #
         self.__timeout = timeout
         self.__queue = None
+        self.__thread_lock = threading.Lock()
     #
     def __getstate__(self):
-        self.__manager = None
-        return self.__dict__
+        state = self.__dict__.copy()
+        state.pop('_fork_class__thread_lock', None)
+        state['_fork_class__manager'] = None
+        return state
+    #
+    def __setstate__(self, state):
+        # Restore the object's state
+        self.__dict__.update(state)
+        # Recreate the lock
+        self.__thread_lock = threading.Lock()    
     #
     @staticmethod
     def can_fork():
         return hasattr(socket,'AF_UNIX')
     #
-    def run(self, cmd, *k, **v):
+    def __run(self, cmd, *k, **v):
         assert self.already_run is False
         self.__cmd_name = cmd.__name__
         self.__ret = (2, RuntimeError('Process {!r} : could not read its return value'.format(self.__cmd_name)), None)
@@ -298,6 +308,10 @@ class fork_class(fork_class_base):
                 self.__ret = (1, E, format_exception(E))
         self.already_run = True
     #
+    def run(self, cmd, *k, **v):
+        with self.__thread_lock:
+            return self.__run(cmd, *k, **v)
+    #
     @property
     def task_id(self):
         return self.__cmd_id
@@ -308,7 +322,7 @@ class fork_class(fork_class_base):
                 self.__manager = get_manager(self.__address, self.__authkey)
             self.__manager.terminate__(self.__cmd_id)
     #
-    def wait(self, timeout=None, raise_exception=True):
+    def __wait(self, timeout=None, raise_exception=True):
         timeout = self.__timeout if timeout is None else timeout
         assert self.already_run
         if self.use_fork_ and not self.already_wait:
@@ -330,7 +344,10 @@ class fork_class(fork_class_base):
             if raise_exception:
                 raise self.__ret[1]
         return self.__ret[1]
-
+    #
+    def wait(self, *args, **kwargs):
+        with self.__thread_lock:
+            return self.__wait(*args, **kwargs)
 
 ############################## status
 
