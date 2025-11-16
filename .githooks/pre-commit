@@ -15,16 +15,51 @@ if git diff --cached | egrep -2 '^(old.mode|new.mode)' ; then
  exit 1
 fi
 
+############
+
+# Array to track all temporary directories
+tmpdirs=()
+
+# Cleanup function with safety checks
+cleanup() {
+    for tmpdir in "${tmpdirs[@]}"; do
+        # Safety checks before deletion
+        if test -z "$tmpdir" ; then
+            continue
+        fi
+        if ! test -d "$tmpdir" ; then
+            echo "Disappeared $tmpdir"
+            continue
+        fi
+
+        # Check if it's in /tmp using case pattern matching (POSIX-compliant)
+        case "$tmpdir" in
+            /tmp/*)
+                rm -rf "$tmpdir"
+                echo "Cleaned up $tmpdir"
+                ;;
+            *)
+                echo "WARNING: temp dir is not in /tmp, refusing to delete: $tmpdir" >&2
+                ;;
+        esac
+    done
+}
+
+# Set up trap to cleanup on exit or error
+trap "echo PANIC CLEANUP ; cleanup" ERR HUP INT QUIT TERM
 
 
 ######### prepare test dir
 
 
 t=`mktemp -d`
+# Add to cleanup list
+tmpdirs+=("${t}")
 
 test -d $t
 
-#trap "rm -fr \"$\"t" EXIT ERR HUP INT QUIT TERM
+echo ============= TEST IN $t
+
 
 git archive HEAD | ( cd $t ; tar xf - )
 
@@ -53,6 +88,6 @@ done
 
 # I hate pytest
 
-echo You should: rm -fr "$t"
-
 popd
+
+cleanup
