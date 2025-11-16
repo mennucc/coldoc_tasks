@@ -93,10 +93,9 @@ class fork_class(fork_class_base):
         self.__v = v
         #
         if self.use_fork_:
-            _tempfile = tempfile.NamedTemporaryFile(prefix='forkret',delete=False)
-            self.tempfile_name = _tempfile.name
-            with open(_tempfile.name,'wb') as f:
-                pickle.dump((2,None), f)
+            with tempfile.NamedTemporaryFile(mode='wb',prefix='forkret',delete=False) as _tempfile:
+                self.tempfile_name = _tempfile.name
+                pickle.dump((2,None), _tempfile)
             self.__other_pid = os.fork()
             if self.__other_pid == 0:
                 self.__other_pid = os.getpid()

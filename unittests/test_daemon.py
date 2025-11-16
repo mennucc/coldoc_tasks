@@ -39,9 +39,9 @@ from unittests.fakejobs import *
 class TestDaemon(unittest.TestCase):
     #
     def test_daemon(self):
-        t = tempfile.NamedTemporaryFile(prefix='info_', delete=False)
-        info = t.name
-        proc, info_ = CT.tasks_daemon_autostart(infofile=info, logfile=True)
+        with tempfile.NamedTemporaryFile(prefix='info_', delete=False) as t:
+            info = t.name
+            proc, info_ = CT.tasks_daemon_autostart(infofile=info, logfile=True)
         self.assertTrue( info_ == info )
         self.assertTrue( proc )
         address, authkey, info_pid = CT.tasks_server_readinfo(info)[:3]
@@ -59,15 +59,20 @@ class TestDaemon(unittest.TestCase):
         TU.proc_join(proc)
         t.close()
         #print(t.name)
-        os.unlink(t.name)
+        os.unlink(info)
         #
         self.assertTrue(err == 0)
 
+
+
+
+
+        
     def test_daemon_twice(self):
-        t = tempfile.NamedTemporaryFile(prefix='info_', delete=False)
-        info = t.name
-        # start once, and stop
-        proc, info_ = CT.tasks_daemon_autostart(infofile=info, logfile=True)
+        with tempfile.NamedTemporaryFile(prefix='info_', delete=False) as t:
+            info = t.name
+            # start once, and stop
+            proc, info_ = CT.tasks_daemon_autostart(infofile=info, logfile=True)
         self.assertTrue( info_ == info )
         self.assertTrue( proc )
         address, authkey = CT.tasks_server_readinfo(info)[:2]
@@ -87,10 +92,7 @@ class TestDaemon(unittest.TestCase):
         CT.shutdown(address, authkey)
         TU.proc_join(proc)
         ping4 = CT.ping(address, authkey)
-        # clean up
-        t.close()
-        os.unlink(t.name)
-        #
+        os.unlink(info)
         # asserts at the end
         self.assertTrue( ping1 )
         self.assertFalse( ping2 )
@@ -98,19 +100,22 @@ class TestDaemon(unittest.TestCase):
         self.assertFalse( ping4 )
 
 
+
     def test_daemon_twice_lock(self):
-        t = tempfile.NamedTemporaryFile(prefix='info_', delete=False)
+      with tempfile.NamedTemporaryFile(prefix='info_', delete=True) as t:
         info = t.name
         # start
         def run1(l):
             log1 = tempfile.NamedTemporaryFile(prefix=l, delete=False)
-            proc1, info1 = CT.tasks_daemon_autostart(infofile=info, logfile=log1.name)
+            log_name = log1.name
+            log1.close()
+            proc1, info1 = CT.tasks_daemon_autostart(infofile=info, logfile=log_name)
             self.assertTrue( info1 == info )
             self.assertTrue( proc1 )
             address1, authkey1 = CT.tasks_server_readinfo(info)[:2]
             ping1 = CT.ping(address1, authkey1)
             self.assertTrue( ping1 )
-            return log1,proc1,info1,address1,authkey1,ping1
+            return log_name,proc1,info1,address1,authkey1,ping1
         
         with concurrent.futures.ThreadPoolExecutor() as executor:
             f1 = executor.submit(run1, 'log1')
@@ -119,8 +124,8 @@ class TestDaemon(unittest.TestCase):
             r2 = f2.result()
             #print('=== r1',r1)
             #print('=== r2',r2)
-        log1,proc1,info1,address1,authkey1,ping1 = r1
-        log2,proc2,info2,address2,authkey2,ping2 = r2
+        log1_name,proc1,info1,address1,authkey1,ping1 = r1
+        log2_name,proc2,info2,address2,authkey2,ping2 = r2
         
         self.assertEqual( info2, info )
         self.assertEqual( info1, info )
@@ -141,11 +146,13 @@ class TestDaemon(unittest.TestCase):
             TU.proc_join(proc2)
         else:
             TU.proc_join(proc1pid)
+        for log_name in (log1_name, log2_name):
+            try:
+                os.unlink(log_name)
+            except FileNotFoundError:
+                pass
 
-        t.close()
-        #print(open(info).read())
-        os.unlink(t.name)
-        
+
         if 0:
             print('v'*30)
             with open(log1.name) as f1:
