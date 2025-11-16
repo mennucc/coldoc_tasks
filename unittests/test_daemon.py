@@ -20,6 +20,9 @@ logger = logging.getLogger(__name__)
 testdir = os.path.dirname(os.path.realpath(__file__))
 sourcedir = os.path.dirname(testdir)
 
+if testdir not in sys.path:
+    sys.path.insert(0, testdir)
+
 
 if __name__ == '__main__':
     if sourcedir not in sys.path:
@@ -30,6 +33,8 @@ import coldoc_tasks.task_utils as TU
 ## currently unused
 #import coldoc_tasks.simple_tasks
 #import coldoc_tasks.wrap_lockfile as WL
+
+from unittests.fakejobs import *
 
 class TestDaemon(unittest.TestCase):
     #

@@ -35,7 +35,7 @@ import coldoc_tasks.simple_tasks, coldoc_tasks.coldoc_tasks, coldoc_tasks.celery
 from coldoc_tasks.task_utils import format_exception, __fork_reentrat_test as fork_reentrat_test
 from coldoc_tasks.exceptions import ColdocTasksTimeoutError
 
-from fakejobs import *
+from unittests.fakejobs import *
 
 class Base(object):
 
