@@ -1,4 +1,5 @@
 import sys, os, time, pickle, functools, base64, copy, contextlib
+import socket
 from os.path import join as osjoin
 from pathlib import Path
 
@@ -317,3 +318,63 @@ def format_exception(exc, *key, **val):
     else:
         # Older versions require (type, value, tb)
         return traceback.format_exception(type(exc), exc, exc.__traceback__, *key, **val)
+
+############################### socket management code
+
+
+def is_socket_in_use(socket_path, bind=True):
+    """
+    Check if any process is using the Unix socket.
+    
+    Returns:
+        tuple: (in_use: bool, process_info: dict|None)
+        - in_use: True if socket is active, False otherwise
+        - process_info: Process details if psutil is available and found, None otherwise
+    """
+    if not os.path.exists(socket_path):
+        return False, None
+    
+    # First check: try to connect to see if someone is using
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        if bind:
+            sock.bind(socket_path)
+        else:
+            sock.connect(socket_path)
+        sock.close()
+        using = True
+    except (ConnectionRefusedError, FileNotFoundError) as E:
+        # Socket file exists but nobody is using
+        using = False
+    except OSError as E:
+        print(f"Error checking socket: {E}")
+        if E.errno == 98:
+            using = 'maybe'
+        else:
+            using = False
+    except Exception as e:
+        print(f"Unexpected error checking socket: {e}")
+        return False, None
+    finally:
+        try:
+            sock.close()
+        except:
+            pass
+    
+    # If not using, no need to check further
+    if not using:
+        return False, None
+    
+    # Socket is using, try to get process info with psutil
+    if psutil:
+        for proc in psutil.process_iter(['pid', 'name']):
+            try:
+                for conn in proc.connections(kind='unix'):
+                    if conn.laddr == socket_path:
+                        return True, proc.info
+            except (psutil.AccessDenied, psutil.NoSuchProcess):
+                pass
+    
+    # Socket is in use but couldn't get process info
+    return True, None
+
