@@ -996,7 +996,7 @@ def _fix_parameters(infofile=None, sock=None, auth=None,
     assert logfile in (None, True) or isinstance(logfile, (str, bytes, Path))
     return infofile, sock, auth, tempdir, logfile, other_
 
-def tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
+def __tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
                            pythonpath=None,
                            cwd=None,
                            logfile = None,
@@ -1161,7 +1161,7 @@ def tasks_daemon_autostart_nolock(infofile=None, address=None, authkey=None,
     return proc, infofile
 
 def tasks_daemon_autostart(infofile, **kwargs):
-    """ As tasks_daemon_autostart_nolock(), but adds a lock, to avoid race condition,
+    """ As __tasks_daemon_autostart_nolock(), but adds a lock, to avoid race condition,
     i.e. starting two servers with same infofile;
     in case of exception (such as lock timeout),  returns (`False`, exception) ;
     in case of timeout, returns (None, infofile)
@@ -1169,12 +1169,12 @@ def tasks_daemon_autostart(infofile, **kwargs):
     assert isinstance(infofile, (str,bytes, Path))
     if not os.path.isdir( os.path.dirname(infofile)):
         logger.warning("This infofile refers to a non-existant directory %r, cannot lock", infofile)
-        return tasks_daemon_autostart_nolock(infofile, **kwargs)
+        return __tasks_daemon_autostart_nolock(infofile, **kwargs)
     timeout_ = kwargs.get('timeout', 2.0)
     ret = None, None
     try:
         with mylockfile(infofile+'-autostart', timeout=timeout_):
-            ret = tasks_daemon_autostart_nolock(infofile, **kwargs)
+            ret = __tasks_daemon_autostart_nolock(infofile, **kwargs)
     except myLockTimeout as E:
         logger.error('lock timeout %r', E)
         ret = False, E
