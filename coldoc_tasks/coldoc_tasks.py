@@ -73,6 +73,7 @@ import os, sys, time, pickle, base64, functools
 import subprocess, multiprocessing.managers
 import random, socket, struct, tempfile, copy, threading
 from pathlib  import Path
+from datetime import datetime
 
 try:
     import psutil
@@ -517,7 +518,7 @@ def run_server(address, authkey, infofile, **kwargs):
             logger.info('Received fast shutdown')
             __do_run.value = -1
         #
-        Nooone = (None, None, None)
+        Nooone = (None, None, None, None)
         def run_cmd__(c, k, v, pipe=None, queue=None):
             id_ = base64.b64encode(randbytes(9),altchars=b'-_').decode('ascii')
             F = os.path.join(tempdir, 'socket_' + id_)
@@ -550,20 +551,20 @@ def run_server(address, authkey, infofile, **kwargs):
             #
             pipe0 = pipe[0]
             #pipe0._config['authkey'] = bytes(pipe0._config['authkey'])
-            processes[id_] = (proc, pipe0, access_pair_)
+            processes[id_] = (proc, pipe0, access_pair_, time.time())
             logger.debug('Running cmd %r ( %r , %r ), id = %r, socket = %r', c, k, v, id_, F)
             return id_
         #
         def get_wait_socket__(id_):
             id_ = str(id_)
             logger.debug('getting result pipe for  id = %r ', id_)
-            proc, pipe, F = processes.get(id_, Nooone)
+            proc, pipe, F, started_at = processes.get(id_, Nooone)
             return F
         #
         def get_result_join__(id_):
             logger.debug('getting result for  id = %r ', id_)
             id_ = str(id_)
-            proc, pipe, F = processes.pop(id_, Nooone)
+            proc, pipe, F, started_at = processes.pop(id_, Nooone)
             if proc is not None:
                 try:
                     logger.info('Waiting for result id = %r', id_)
@@ -580,17 +581,20 @@ def run_server(address, authkey, infofile, **kwargs):
         def terminate__(id_):
             logger.debug('getting result for  id = %r ', id_)
             id_ = str(id_)
-            proc, pipe, F = processes.pop(id_, Nooone)
+            proc, pipe, F, started_at = processes.pop(id_, Nooone)
             if proc is not None:
                 proc.terminate()
                 return True
             return False
         #
         def _describe_process_entry(entry):
-            proc, pipe, access_pair_ = entry
+            proc, pipe, access_pair_, started_at = entry
             summary = {
                 'proc': repr(proc)
             }
+            if started_at is not None:
+                local_tz = datetime.now().astimezone().tzinfo
+                summary['started_at'] = datetime.fromtimestamp(started_at, tz=local_tz).isoformat()
             for attr in ('name', 'pid', 'exitcode', 'daemon'):
                 value = getattr(proc, attr, None)
                 if value is not None:
@@ -629,7 +633,7 @@ def run_server(address, authkey, infofile, **kwargs):
         def join__(id_):
             logger.debug('joining  id = %r ', id_)
             id_ = str(id_)
-            proc, pipe, F = processes.pop(id_, Nooone)
+            proc, pipe, F, started_at = processes.pop(id_, Nooone)
             if proc is not None:
                 try:
                     logger.info('Joining id = %r', id_)
