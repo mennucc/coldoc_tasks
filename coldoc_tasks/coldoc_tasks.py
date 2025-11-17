@@ -263,12 +263,12 @@ def queue_cmd(manager, cmd, args, kwarks, queue=True):
     return proxy._getvalue()
 
 
-def wait(id_, manager):
+def wait(id_, manager, timeout=None):
     """Block until the remote command identified by `id_` finishes executing."""
     F = manager.get_wait_socket__(id_)
     F = F._getvalue()
     if F is not None:
-        return __send_message(b'#WAIT', F)
+        return __send_message(b'#WAIT', F, timeout)
 
 def get_result(id_, manager, timeout=None):
     """Fetch the serialized `(status, payload, traceback)` tuple associated with `id_`."""
@@ -361,7 +361,7 @@ class fork_class(fork_class_base):
                 self.__ret = get_result(self.__cmd_id, self.__manager, timeout=timeout)
                 if self.__ret is None:
                     raise ColdocTasksTimeoutError('Process has disappeared: {}'.format(self.__cmd_id))
-                self.__manager.join__(self.__cmd_id)
+                self.__manager.join__(self.__cmd_id, timeout)
             except socket.timeout as E:
                 raise ColdocTasksTimeoutError('timeout on {!r} : {!r}'.format(self.__cmd_id, E))
             except Exception as E:
@@ -586,7 +586,7 @@ def run_server(address, authkey, infofile, **kwargs):
             proc, pipe, F, started_at = processes.get(id_, Nooone)
             return F
         #
-        def get_result_join__(id_):
+        def get_result_join__(id_, timeout=None):
             logger.debug('getting result for  id = %r ', id_)
             id_ = str(id_)
             with processes_thread_lock:
@@ -594,7 +594,7 @@ def run_server(address, authkey, infofile, **kwargs):
             if proc is not None:
                 try:
                     logger.info('Waiting for result id = %r', id_)
-                    r = __send_message(b'#SEND', F) #get_result(id_) #pipe.recv()
+                    r = __send_message(b'#SEND', F, timeout) #get_result(id_) #pipe.recv()
                     __send_message(b'#QUIT', F)
                     proc_join(proc)
                 except  Exception as E:
@@ -657,7 +657,7 @@ def run_server(address, authkey, infofile, **kwargs):
         def getpid__():
             return os.getpid()
         #
-        def join__(id_):
+        def join__(id_, timeout=None):
             logger.debug('joining  id = %r ', id_)
             id_ = str(id_)
             with processes_thread_lock:
@@ -665,7 +665,7 @@ def run_server(address, authkey, infofile, **kwargs):
             if proc is not None:
                 try:
                     logger.info('Joining id = %r', id_)
-                    sent = __send_message(b'#SENT', F)
+                    sent = __send_message(b'#SENT', F, timeout)
                     if not sent:
                         logger.critical('The result of process %s was never recovered', id_)
                     __send_message(b'#QUIT', F)
@@ -735,7 +735,7 @@ def run_server(address, authkey, infofile, **kwargs):
         logger.info('Shutting down')
         kwargs['processes'] = processes
         for id_  in list(processes.keys()):
-            join__(id_)
+            join__(id_, 1)
         kwargs.pop('processes', None)
         for pool in pools.values():
             pool.close()
