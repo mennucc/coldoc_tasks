@@ -96,7 +96,7 @@ if __name__ == '__main__':
     
 
 from coldoc_tasks.simple_tasks import fork_class_base
-from coldoc_tasks.task_utils import _normalize_pythonpath, mychmod, proc_join, format_exception
+from coldoc_tasks.task_utils import _normalize_pythonpath, mychmod, proc_join, format_exception, is_socket_in_use
 from coldoc_tasks.wrap_lockfile import mylockfile, myLockTimeout
 import plain_config
 from coldoc_tasks.exceptions import *
@@ -496,7 +496,6 @@ def run_server(address, authkey, infofile, **kwargs):
     s = set(kwargs.keys()).difference(['default_tempdir','tempdir','with_django','logfile','pid','return_code'])
     if s:
         logger.warning('Some kwargs were ignored: %r ', s)
-    #
     manager = multiprocessing.managers.SyncManager(address=address, authkey=authkey)
     #
     kwargs['return_code'] = True
@@ -967,6 +966,14 @@ def _fix_parameters(infofile=None, sock=None, auth=None,
         if sock:
             logger.warning('Changing socket  %r -> %r , wrong directory', sock, newsock)
         sock = newsock
+        auth = None
+    else:
+        in_use, proc_info = is_socket_in_use(sock)
+        if in_use:
+            new_sock = os.path.join(tempdir, 'master_socket_' + general_rand_gen.rand_string())
+            logger.warning(f' socket {sock} is in use , by {proc_info}, replace with {new_sock}')
+            sock = new_sock
+            auth = None
     #
     auth = auth or os.urandom(10)
     #
