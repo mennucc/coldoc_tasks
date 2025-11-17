@@ -963,7 +963,7 @@ def _fix_parameters(infofile=None, sock=None, auth=None,
         d = os.path.dirname(sock)
         ok = os.path.isdir(d) and d.startswith(tempdir)
     if not ok:
-        newsock = os.path.join(tempdir, 'socket')
+        newsock = os.path.join(tempdir, 'manager_socket_'+general_rand_gen.rand_string())
         if sock:
             logger.warning('Changing socket  %r -> %r , wrong directory', sock, newsock)
         sock = newsock
