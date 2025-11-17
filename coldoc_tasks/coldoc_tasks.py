@@ -522,6 +522,9 @@ def run_server(address, authkey, infofile, **kwargs):
         #
         rand_gen = RandGen()
         #
+        # not sure if the manager uses threads, but in case:
+        processes_thread_lock = threading.Lock()
+        #
         # used if run_with_subprocess is True
         __do_run = multiprocessing.Value('i')
         def stop_server__():
@@ -564,7 +567,9 @@ def run_server(address, authkey, infofile, **kwargs):
             #
             pipe0 = pipe[0]
             #pipe0._config['authkey'] = bytes(pipe0._config['authkey'])
-            processes[id_] = (proc, pipe0, access_pair_, time.time())
+            with processes_thread_lock:
+                assert id_ not in processes
+                processes[id_] = (proc, pipe0, access_pair_, time.time())
             logger.debug('Running cmd %r ( %r , %r ), id = %r, socket = %r', c, k, v, id_, F)
             return id_
         #
@@ -577,7 +582,8 @@ def run_server(address, authkey, infofile, **kwargs):
         def get_result_join__(id_):
             logger.debug('getting result for  id = %r ', id_)
             id_ = str(id_)
-            proc, pipe, F, started_at = processes.pop(id_, Nooone)
+            with processes_thread_lock:
+                proc, pipe, F, started_at = processes.pop(id_, Nooone)
             if proc is not None:
                 try:
                     logger.info('Waiting for result id = %r', id_)
@@ -594,7 +600,8 @@ def run_server(address, authkey, infofile, **kwargs):
         def terminate__(id_):
             logger.debug('getting result for  id = %r ', id_)
             id_ = str(id_)
-            proc, pipe, F, started_at = processes.pop(id_, Nooone)
+            with processes_thread_lock:
+                proc, pipe, F, started_at = processes.pop(id_, Nooone)
             if proc is not None:
                 proc.terminate()
                 return True
@@ -646,7 +653,8 @@ def run_server(address, authkey, infofile, **kwargs):
         def join__(id_):
             logger.debug('joining  id = %r ', id_)
             id_ = str(id_)
-            proc, pipe, F, started_at = processes.pop(id_, Nooone)
+            with processes_thread_lock:
+                proc, pipe, F, started_at = processes.pop(id_, Nooone)
             if proc is not None:
                 try:
                     logger.info('Joining id = %r', id_)
