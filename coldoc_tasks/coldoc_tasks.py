@@ -109,6 +109,26 @@ __all__ = ('get_manager', 'run_server', 'ping', 'server_pid', 'status', 'shutdow
            'tasks_server_readinfo', 'tasks_server_writeinfo', 'tasks_server_start', 'task_server_check')
 
 
+class RandGen():
+    def __init__(self, seed=None):
+        if seed is None:
+            try:
+                seed = os.urandom(8)
+            except Exception as E:
+                logger.error('When `os.urandom(8)` : %r', E)
+                seed =time.time()
+        #
+        self.randomsource = randomsource = random.Random(seed)
+        if  hasattr(randomsource,'RandGen'):
+            self.rand_bytes = randomsource.randbytes
+        else: #older Python
+            self.rand_bytes = lambda n: self.randomsource.getrandbits(n * 8).to_bytes(n, 'little')
+    #
+    def rand_string(self, n=8):
+        b = self.rand_bytes(n)
+        return   base64.b64encode(b,altchars=b'-_').decode('ascii')
+
+general_rand_gen = RandGen()
 
 ##########################
 
@@ -501,13 +521,7 @@ def run_server(address, authkey, infofile, **kwargs):
             d = z.get()
             logger.info('********** %r', d)
         #
-        randomsource = random.Random(os.urandom(8))
-        #
-        if  hasattr(randomsource,'randbytes'):
-            randbytes = randomsource.randbytes
-        else: #older Python
-            def randbytes(n):
-                return randomsource.getrandbits(n * 8).to_bytes(n, 'little')
+        rand_gen = RandGen()
         #
         # used if run_with_subprocess is True
         __do_run = multiprocessing.Value('i')
@@ -520,7 +534,7 @@ def run_server(address, authkey, infofile, **kwargs):
         #
         Nooone = (None, None, None, None)
         def run_cmd__(c, k, v, pipe=None, queue=None):
-            id_ = base64.b64encode(randbytes(9),altchars=b'-_').decode('ascii')
+            id_ = rand_gen.rand_string(9)
             F = os.path.join(tempdir, 'socket_' + id_)
             socket_ = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             socket_.bind(F)
@@ -535,7 +549,7 @@ def run_server(address, authkey, infofile, **kwargs):
             #z = pool.apply_async(c,k,v)
             ## but it hangs
             # add auth
-            auth_ = randbytes(8)
+            auth_ = rand_gen.rand_bytes(8)
             access_pair_ = (F, auth_)
             #
             if queue is None:
