@@ -120,13 +120,20 @@ class RandGen():
         #
         self.randomsource = randomsource = random.Random(seed)
         if  hasattr(randomsource,'RandGen'):
-            self.rand_bytes = randomsource.randbytes
+            self._rand_bytes = randomsource.randbytes
         else: #older Python
-            self.rand_bytes = lambda n: self.randomsource.getrandbits(n * 8).to_bytes(n, 'little')
+            self._rand_bytes = lambda n: self.randomsource.getrandbits(n * 8).to_bytes(n, 'little')
     #
-    def rand_string(self, n=8):
-        b = self.rand_bytes(n)
-        return   base64.b64encode(b,altchars=b'-_').decode('ascii')
+    def rand_bytes(self, n=8):
+        "returns n random bytes, default 8"
+        return self._rand_bytes(n)
+    def rand_string(self, n=12):
+        "returns n random chars (using base64 chars and -_ ), default 8"
+        b = self.rand_bytes(1 + n * 3 // 4)
+        s = base64.b64encode(b,altchars=b'-_').decode('ascii')
+        s = s[:n]
+        assert len(s) == n
+        return s
 
 general_rand_gen = RandGen()
 
