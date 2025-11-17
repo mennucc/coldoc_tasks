@@ -90,7 +90,7 @@ class Command(BaseCommand):
             s = globals()[subcmd]
             a = s(address, authkey)
             #print(a)
-            return 'Command returned: ' +  str(a)
+            return 'Command returned: ' +  repr(a)
         
         return 'Unknown sub command: ' + repr(subcmd)
 
