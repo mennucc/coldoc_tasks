@@ -789,9 +789,25 @@ def tasks_server_writeinfo(infofile, *args, **kwargs):
         ret = plain_config.write_config(infofile, kw, sdb, rewrite_old=True)
     return ret
 
-def __tasks_server_start_nolock(infofile, address, authkey, **kwargs):
+def __tasks_server_start_nolock(infofile, address=None, authkey=None, tempdir=None,
+                                logfile=None, default_tempdir=python_default_tempdir,  **kwargs):
     kwargs['pid'] = os.getpid()
+    infofile, address, authkey, tempdir, logfile, other =  \
+        _fix_parameters(infofile, address, authkey, tempdir, logfile, default_tempdir)
+    kwargs['tempdir'] = tempdir
+    kwargs['logfile'] = logfile
+    kwargs['default_tempdir'] = default_tempdir
+    #
+    if 'default_tempdir' in other:
+        other.pop('default_tempdir')
+        logger.warning(' `default_tempdir` ignored in infofile %r ', infofile)
+    for k in other:
+        if k not in kwargs:
+            logger.warning(' %r unused in infofile %r ', k, infofile)
+            kwargs[k] = other[k]
+    #    
     tasks_server_writeinfo(infofile, address, authkey, **kwargs )
+    #
     ret = False
     try:
         kwargs = run_server(address, authkey, infofile, **kwargs)
@@ -802,24 +818,13 @@ def __tasks_server_start_nolock(infofile, address, authkey, **kwargs):
     tasks_server_writeinfo(infofile, address, authkey, **kwargs )
     return ret
 
-def tasks_server_start(infofile, address=None, authkey=None,
-                       tempdir=None, logfile=None, default_tempdir=python_default_tempdir, **kwargs):
+def tasks_server_start(infofile, *args, **kwargs):
     " start a server with `address` and `authkey` ,  saving info in `infofile (that is locked while in use)"
-    infofile, address, authkey, tempdir, logfile, other =  \
-        _fix_parameters(infofile, address, authkey, tempdir, logfile, default_tempdir)
-    if 'default_tempdir' in other:
-        other.pop('default_tempdir')
-        logger.warning(' `default_tempdir` ignored in infofile %r ', infofile)
-    for k in other:
-        if k not in kwargs:
-            logger.warning(' %r unused in infofile %r ', k, infofile)
-            kwargs[k] = other[k]
     lock = mylockfile(infofile, timeout=2)
     ret = None
     try:
         with lock:
-            ret =  __tasks_server_start_nolock(infofile, address, authkey,
-                                           tempdir=tempdir, logfile=logfile, default_tempdir=default_tempdir, **kwargs)
+            ret =  __tasks_server_start_nolock(infofile, *args, **kwargs)
     except Exception as E:
         logger.exception('while starting server')
         ret = False
