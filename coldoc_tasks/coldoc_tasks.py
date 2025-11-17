@@ -1275,6 +1275,10 @@ def main(argv):
     if argv[0] == 'start_with':
         return tasks_server_start(infofile=info)
     #
+    if argv[0] not in ('ping', 'pid', 'status', 'test', 'test_hanging','stop', 'shutdown' ):
+        logger.error('Unknown command %r', argv[0])
+        return False
+    #
     try:
         address, authkey = tasks_server_readinfo(info)[:2]
         assert address and authkey, 'One of address, authkey is missing'
