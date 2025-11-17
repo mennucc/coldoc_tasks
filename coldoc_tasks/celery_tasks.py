@@ -284,14 +284,20 @@ def run_server(celeryconfig=None, with_django=None):
     worker = app.Worker()
     return worker.start()
 
-def server_wait(celeryconfig, timeout = 2.0):
+def server_wait(celeryconfig, timeout = 4.0, timeout_warn = 1.0):
     " try pinging, up to timeout"
     ok = False
-    t = time.time() + timeout
-    for j in range(int(float(timeout) * 20.)):
+    timeout = float(timeout)
+    _timeout_warn = float(timeout_warn)
+    start = time.time()
+    for j in range(int(timeout * 20.)):
         ok = ping(celeryconfig, timeout=0.05)
-        if ok or (time.time() > t) : break
+        now = time.time()
+        if ok or (now > (start + timeout)) : break
         time.sleep(0.05)
+        if timeout_warn and (now > (start + _timeout_warn)):
+            logger.warning('Long wait for celery server...')
+            _timeout_warn += timeout_warn
     return ok
 
 
@@ -302,7 +308,7 @@ def tasks_daemon_autostart(celeryconfig,
                            logfile = None,
                            opt = None,
                            tempdir = default_tempdir,
-                           timeout = 2.0,
+                           timeout = 4.0,
                            force = False,
                            # this option is used to wrap this function for Django...
                            subcmd=None,
