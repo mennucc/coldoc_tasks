@@ -725,12 +725,15 @@ def run_server(address, authkey, infofile, **kwargs):
             # re-register this
             manager.register('shutdown__', lambda : server.stop_event.set())
             server.serve_forever()
-    except (KeyboardInterrupt,SystemExit):
-        pass
-    except Exception:
+    except (KeyboardInterrupt,SystemExit) as E:
+        logger.warning('run_server passing to cleanup due to %r', E)
+        kwargs['runtime_exception'] = repr(E)
+    except Exception as E:
+        kwargs['runtime_exception'] = repr(E)
         logger.exception('in run_server')
         kwargs['return_code'] = False
-    
+    else:
+        kwargs.pop('runtime_exception', None)
     try:
         logger.info('Shutting down')
         kwargs['processes'] = processes
@@ -744,11 +747,14 @@ def run_server(address, authkey, infofile, **kwargs):
         if run_with_subprocess:
             manager.shutdown()
             manager.join()
-    except (KeyboardInterrupt, SystemExit):
-        pass
-    except Exception:
+    except (KeyboardInterrupt, SystemExit) as E:
+        logger.warning('run_server exiting cleanup due to %r', E)
+        kwargs['cleanup_exception'] = repr(E)
+    except Exception as E:
         logger.exception('When cleaning after run_server')
-        kwargs['return_code'] =  False
+        kwargs['cleanup_exception'] = repr(E)
+    else:
+        kwargs.pop('cleanup_exception', None)
     return kwargs
 
 
@@ -808,6 +814,11 @@ def __tasks_server_start_nolock(infofile, address=None, authkey=None, tempdir=No
     if 'default_tempdir' in other:
         other.pop('default_tempdir')
         logger.warning(' `default_tempdir` ignored in infofile %r ', infofile)
+    #
+    kwargs.pop('return_code', None)
+    kwargs.pop('cleanup_exception', None)
+    kwargs.pop('runtime_exception', None)
+    #
     for k in other:
         if k not in kwargs:
             logger.warning(' %r unused in infofile %r ', k, infofile)
