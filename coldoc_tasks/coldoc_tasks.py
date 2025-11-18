@@ -457,7 +457,8 @@ def _fork_mp_wrapper(*args, **kwargs):
     except Exception as E:
         ret = (1, E, format_exception(E))
     logger.info('Id %r cmd %s return %r', id_, cmd, ret)
-    pipe.send(ret)
+    # HACK DO WE REALLY USE IT?
+    #pipe.send(ret)
     rets = pickle.dumps(ret)
     #
     __socket_server(socket_, access_pair_, rets, id_)
