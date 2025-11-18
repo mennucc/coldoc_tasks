@@ -85,6 +85,15 @@ python_default_tempdir = tempfile.gettempdir()
 
 import logging, logging.handlers
 logger = logging.getLogger(__name__)
+if False:
+    logger.setLevel(logging.DEBUG)
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter(
+            '%(asctime)s %(levelname)s %(module)s.%(funcName)s : %(message)s'
+        )
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
 if __name__ == '__main__':
     a = os.path.realpath(os.path.dirname(__file__))
@@ -169,10 +178,11 @@ def __socket_server(socket_, access_pair, rets, id_):
     sent = False
     with socket_ as s:
         logger.debug('Id %s listening', id_)
+        logger.debug('Socket server id %s listening', id_)
         while True:
             conn, addr = s.accept()
             with conn:
-                logger.debug('Id %s connected by %r', id_, addr)
+                logger.debug('Socket server id %s connected by %r', id_, addr)
                 if auth:
                     conn.sendall(b'#AUTH')
                     auth_ = conn.recv(8)
@@ -181,7 +191,7 @@ def __socket_server(socket_, access_pair, rets, id_):
                         break
                 conn.sendall(b'#HELO')
                 a = conn.recv(5)
-                logger.debug('Id %s message is %r', id_, a)
+                logger.debug('Socket server id %s message is %r', id_, a)
                 if a == b'#SEND':
                     l = len(rets)
                     conn.sendall(struct.pack('<Q', l))
@@ -192,7 +202,9 @@ def __socket_server(socket_, access_pair, rets, id_):
                 elif a == b'#QUIT':
                     logger.debug('Exiting id %s socket loop', id_)
                     conn.sendall(b'#GONE')
+                    logger.debug('Socket server id %s exiting', id_)
                     break
+                logger.debug('Socket server id %s ACK', id_)
                 conn.sendall(b'#ACK ')
 
 
@@ -210,6 +222,7 @@ def __recv_exact(sock, length):
 
 
 def __send_message(m, F, timeout=None):
+    logger.debug('Send message m=%r F=%r timeout %r', m, F, timeout)
     assert isinstance(m,bytes) and len(m) == 5
     # unpack auth from access_pair definition
     F, auth = F
@@ -223,7 +236,9 @@ def __send_message(m, F, timeout=None):
         if timeout:
             s.settimeout(timeout)
         s.connect(F)
+        logger.debug('Send message asking for 5 bytes (HELO or AUTH)')
         a = s.recv(5)
+        logger.debug('Send message got %r', a)
         if a == b'#AUTH':
             if auth is None:
                 raise RuntimeError('Auth is required for {!r}'.format(F))
@@ -234,17 +249,23 @@ def __send_message(m, F, timeout=None):
                 raise RuntimeError('Wrong Auth for {!r}'.format(F))
             else:
                 raise RuntimeError('Unexpected hello {!r} from {!r}'.format(a, F))
+        logger.debug('Send message send %r', m)
         s.sendall(m)
         if m == b'#SEND':
+            logger.debug('Send message asking for 8 bytes (size)')
             l = __recv_exact(s, 8)
             l = struct.unpack('<Q', l)[0]
+            logger.debug('Send message asking for %r bytes (payload)', l)
             rets = __recv_exact(s, l)
             ret = pickle.loads(rets)
         elif m == b'#SENT':
+            logger.debug('Send message asking for 1 bytes (bool for sent)')
             l = __recv_exact(s, 1)
             l = struct.unpack('<B', l)[0]
             ret = bool(l)
+        logger.debug('Send message asking for 5 bytes (closure code)')
         a = s.recv(5)
+        logger.debug('Send message closing with %r', a)
         if a not in ( b'#ACK ', b'#GONE' ):
             logger.warning('Unexpected response %r', a)
             ret = False
@@ -461,6 +482,7 @@ def _fork_mp_wrapper(*args, **kwargs):
     #pipe.send(ret)
     rets = pickle.dumps(ret)
     #
+    logger.debug('Command completed; starting socket server for id = %r', id_)
     __socket_server(socket_, access_pair_, rets, id_)
     F = access_pair_[0]
     logger.info('Exited socket loop, removing %r', F)
@@ -578,7 +600,7 @@ def run_server(address, authkey, infofile, **kwargs):
             with processes_thread_lock:
                 assert id_ not in processes
                 processes[id_] = (proc, pipe0, access_pair_, time.time())
-            logger.debug('Running cmd %r ( %r , %r ), id = %r, socket = %r', c, k, v, id_, F)
+            logger.debug('Running id = %r, socket = %r cmd %r ( %r , %r )', id_, F, c, k, v)
             return id_
         #
         def get_wait_socket__(id_):
