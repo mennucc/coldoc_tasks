@@ -503,6 +503,8 @@ def run_server(address, authkey, infofile, **kwargs):
     global logger
     L.setLevel(logger.getEffectiveLevel())
     logger = L
+    logfile_temp_created = False
+
     auto_test_at_start = kwargs.pop('auto_test_at_start',True)
     #
     default_tempdir = kwargs.get('default_tempdir', python_default_tempdir)
@@ -515,6 +517,8 @@ def run_server(address, authkey, infofile, **kwargs):
         logfile_f = tempfile.NamedTemporaryFile(dir=tempdir, delete=False, mode='a',
                                                 prefix='server_', suffix='.log')
         logfile = logfile_f.name
+        logfile_f.close()
+        logfile_temp_created = True
     if logfile:
         h = logging.handlers.RotatingFileHandler(logfile, maxBytes=2 ** 16, backupCount=5)
         f = logging.Formatter('[%(asctime)s - %(funcName)s - %(levelname)s] %(message)s')
@@ -523,6 +527,8 @@ def run_server(address, authkey, infofile, **kwargs):
         #logger.setLevel(logging.INFO)
         logger.info('Start log, pid %r', os.getpid())
         kwargs['logfile'] = logfile
+        if logfile_temp_created:
+            tasks_server_writeinfo(infofile, address, authkey, **kwargs)
     #
     s = set(kwargs.keys()).difference(['default_tempdir','tempdir','with_django','logfile','pid','return_code'])
     if s:
@@ -779,6 +785,15 @@ def run_server(address, authkey, infofile, **kwargs):
         kwargs['cleanup_exception'] = repr(E)
     else:
         kwargs.pop('cleanup_exception', None)
+    #
+    if logfile_temp_created and logfile:
+        try:
+            os.unlink(logfile)
+            kwargs.pop('logfile', None)
+        except FileNotFoundError:
+            kwargs.pop('logfile', None)
+        except Exception as E:
+            logger.warning('Cannot remove temporary logfile %r: %r', logfile, E)
     return kwargs
 
 
