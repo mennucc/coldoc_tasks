@@ -503,6 +503,7 @@ def run_server(address, authkey, infofile, **kwargs):
     global logger
     L.setLevel(logger.getEffectiveLevel())
     logger = L
+    auto_test_at_start = kwargs.pop('auto_test_at_start',True)
     #
     default_tempdir = kwargs.get('default_tempdir', python_default_tempdir)
     tempdir     = kwargs.get('tempdir', None)
@@ -544,7 +545,7 @@ def run_server(address, authkey, infofile, **kwargs):
             os.environ.setdefault('DJANGO_SETTINGS_MODULE', with_django)
             import django
             django.setup()
-        if 1:
+        if auto_test_at_start:
             z = default_pool.apply_async(str,(2,))
             z.wait()
             d = z.get()
@@ -715,21 +716,21 @@ def run_server(address, authkey, infofile, **kwargs):
             b = set(manager._registry)
             return b.difference(a)
         # test consistency
-        if 1:
-            a = initializer()
-            if set(actions).difference(a):
+        init_ = initializer()
+        if auto_test_at_start:
+            if set(actions).difference(init_):
                 raise RuntimeError('Actions missing in server', set(actions).difference(a))
-            if set(a).difference(actions):
+            if set(init_).difference(actions):
                 raise RuntimeError('Actions missing in client', set(a).difference(actions))
         # self test
-        if 1:
+        if auto_test_at_start:
             i = run_cmd__(str,(2,),{})
             #wait(i) no, the manager is not running
             d = get_result_join__(i)
             assert isinstance(d,tuple) and d[0] == 0 and d[1] == '2', repr(d)
             logger.info('self test OK')
         # queue self test
-        if 1:
+        if auto_test_at_start:
             i = run_cmd__(str,(5,),{},queue=True)
             #wait(i) no, the manager is not running
             d = get_result_join__(i)
