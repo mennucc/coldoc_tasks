@@ -9,7 +9,7 @@ or
 $ pytest-3 unittests/test_cli.py 
 """
 
-import os, sys, io, unittest, tempfile, shutil, time
+import os, sys, io, unittest, tempfile, shutil, time, pickle
 import functools, tempfile, threading, multiprocessing, logging, signal
 from os.path import join as osjoin
 import concurrent.futures
@@ -214,6 +214,23 @@ class TestDaemon(unittest.TestCase):
         info_file.close()
         os.unlink(info_file.name)
         shutil.rmtree(tmpdir)
+
+    def test_pickled_fork_wait_lookup_error(self):
+        with tempfile.NamedTemporaryFile(prefix='info_pickle_', delete=False) as info_file:
+            info = info_file.name
+            proc, info_ = CT.tasks_daemon_autostart(infofile=info, logfile=True)
+        self.assertEqual(info, info_)
+        address, authkey = CT.tasks_server_readinfo(info)[:2]
+        fork = CT.fork_class(address, authkey)
+        fork.run(fakesum, 1, 2, 3)
+        fork_copy = pickle.loads(pickle.dumps(fork))
+        result = fork.wait()
+        self.assertEqual(result, 6)
+        with self.assertRaises(CT.ColdocTasksProcessLookupError):
+            fork_copy.wait()
+        CT.shutdown(address, authkey)
+        TU.proc_join(proc)
+        os.unlink(info)
 
 
 if __name__ == '__main__':
