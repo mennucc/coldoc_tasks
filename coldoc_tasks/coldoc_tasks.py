@@ -380,13 +380,14 @@ class fork_class(fork_class_base):
             self.already_wait = True
             try:
                 self.__ret = get_result(self.__cmd_id, self.__manager, timeout=timeout)
-                if self.__ret is None:
-                    raise ColdocTasksTimeoutError('Process has disappeared: {}'.format(self.__cmd_id))
-                self.__manager.join__(self.__cmd_id, timeout)
+                if self.__ret is not None:
+                    self.__manager.join__(self.__cmd_id, timeout)
             except socket.timeout as E:
                 raise ColdocTasksTimeoutError('timeout on {!r} : {!r}'.format(self.__cmd_id, E))
             except Exception as E:
                 raise RuntimeError('Process {!r} exception on wait : {!r}'.format(self.__cmd_name, E))
+            if self.__ret is None:
+                raise ColdocTasksProcessLookupError('Process has disappeared: {}'.format(self.__cmd_id))
         if self.__ret[0] :
             self.traceback_ = self.__ret[2]
             self.exception_ = self.__ret[1]
